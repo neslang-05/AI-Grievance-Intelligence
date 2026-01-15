@@ -158,10 +158,10 @@ export default function OfficerDashboard() {
                     <Calendar className="h-4 w-4" />
                     {new Date(complaint.created_at).toLocaleDateString()}
                   </div>
-                  {(complaint.location_manual || complaint.location_ward) && (
+                  {complaint.location_address && (
                     <div className="flex items-center gap-2">
                       <MapPin className="h-4 w-4" />
-                      {complaint.location_manual || complaint.location_ward}
+                      <span className="truncate max-w-xs">{complaint.location_address}</span>
                     </div>
                   )}
                   <div>
@@ -186,15 +186,32 @@ export default function OfficerDashboard() {
 
                 {complaint.citizen_image_urls && complaint.citizen_image_urls.length > 0 && (
                   <div className="mb-4">
-                    <strong className="text-sm">Images:</strong>
-                    <div className="grid grid-cols-4 gap-2 mt-2">
+                    <strong className="text-sm flex items-center gap-2 mb-2">
+                      📸 Evidence Images ({complaint.citizen_image_urls.length})
+                    </strong>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       {complaint.citizen_image_urls.map((url, idx) => (
-                        <img
+                        <a
                           key={idx}
-                          src={url}
-                          alt={`Evidence ${idx + 1}`}
-                          className="w-full h-24 object-cover rounded-md"
-                        />
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group relative block overflow-hidden rounded-lg border-2 border-gray-200 hover:border-blue-400 transition-all shadow-sm hover:shadow-md"
+                        >
+                          <img
+                            src={url}
+                            alt={`Evidence ${idx + 1}`}
+                            className="w-full h-28 object-cover group-hover:scale-105 transition-transform duration-200"
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                            <span className="opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs font-medium bg-black/60 px-2 py-1 rounded">
+                              Click to view
+                            </span>
+                          </div>
+                          <div className="absolute bottom-1 right-1 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded">
+                            {idx + 1}
+                          </div>
+                        </a>
                       ))}
                     </div>
                   </div>

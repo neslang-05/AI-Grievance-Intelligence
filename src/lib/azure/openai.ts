@@ -7,19 +7,31 @@ const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT_NAME!
 export const azureOpenAIClient = new OpenAIClient(endpoint, new AzureKeyCredential(apiKey))
 
 export async function analyzeImage(imageBase64: string, prompt: string): Promise<string> {
+  console.log('Sending image to Azure OpenAI for analysis...')
   try {
     const response = await azureOpenAIClient.getChatCompletions(
       deploymentName,
       [
         {
           role: 'user',
-          content: `${prompt}\n\nImage: data:image/jpeg;base64,${imageBase64.substring(0, 100)}...`,
+          // @ts-ignore
+          content: [
+            { type: 'text', text: prompt },
+            {
+              type: 'image_url',
+              imageUrl: {
+                url: `data:image/jpeg;base64,${imageBase64}`
+              }
+            }
+          ],
         },
       ],
       { maxTokens: 500 }
     )
 
-    return response.choices[0]?.message?.content || ''
+    const content = response.choices[0]?.message?.content || ''
+    console.log('Image analysis successful:', content.substring(0, 50) + '...')
+    return content
   } catch (error) {
     console.error('Error analyzing image:', error)
     throw new Error('Failed to analyze image')

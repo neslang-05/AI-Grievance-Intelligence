@@ -1,0 +1,22 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="60" cy="60" r="58" fill="#0F4C81" stroke="#1A5F7A" stroke-width="2"/>
+  
+  <!-- Unity Symbol - Three interconnected circles representing collaboration -->
+  <circle cx="45" cy="45" r="12" fill="#2B8FBD" opacity="0.9"/>
+  <circle cx="75" cy="45" r="12" fill="#2B8FBD" opacity="0.9"/>
+  <circle cx="60" cy="68" r="12" fill="#2B8FBD" opacity="0.9"/>
+  
+  <!-- Connecting lines -->
+  <line x1="45" y1="45" x2="75" y2="45" stroke="white" stroke-width="3" opacity="0.8"/>
+  <line x1="45" y1="45" x2="60" y2="68" stroke="white" stroke-width="3" opacity="0.8"/>
+  <line x1="75" y1="45" x2="60" y2="68" stroke="white" stroke-width="3" opacity="0.8"/>
+  
+  <!-- Central unity node -->
+  <circle cx="60" cy="53" r="6" fill="white"/>
+  
+  <!-- Desk/Service element - simplified desk shape at bottom -->
+  <rect x="35" y="82" width="50" height="4" rx="2" fill="white" opacity="0.9"/>
+  <rect x="40" y="77" width="8" height="5" rx="1" fill="white" opacity="0.8"/>
+  <rect x="72" y="77" width="8" height="5" rx="1" fill="white" opacity="0.8"/>
+</svg>

@@ -33,17 +33,26 @@ async function uploadMedia(file: Buffer, fileName: string, bucket: string): Prom
 async function normalizeInputs(formData: FormData): Promise<NormalizedInput> {
   const text = formData.get('text') as string | null
   const voiceFile = formData.get('voice') as File | null
-  const imageFiles = formData.getAll('images') as File[]
+  
+  // Robustly get image files - check both 'images' and 'image-i' keys
+  let imageFiles = formData.getAll('images') as File[]
+  
+  // Also check for image-0, image-1, etc.
+  for (let i = 0; i < 20; i++) {
+    const file = formData.get(`image-${i}`) as File | null
+    if (file && file.size > 0 && !imageFiles.includes(file)) {
+      imageFiles.push(file)
+    }
+  }
+
   const locationLat = formData.get('locationLat') as string | null
   const locationLng = formData.get('locationLng') as string | null
-  const manualLocation = formData.get('manualLocation') as string | null
-  const ward = formData.get('ward') as string | null
+  const address = formData.get('address') as string | null
 
   const normalized: NormalizedInput = {
     textContent: text || '',
     imageDescriptions: [],
-    manualLocation: manualLocation || undefined,
-    ward: ward || undefined,
+    address: address || undefined,
   }
 
   // Add location if provided
@@ -111,7 +120,15 @@ export async function submitComplaint(formData: FormData) {
 
     // Step 4: Upload media files if present
     const voiceFile = formData.get('voice') as File | null
-    const imageFiles = formData.getAll('images') as File[]
+    
+    // Get image files - client sends them as image-0, image-1, etc.
+    const imageFiles: File[] = []
+    for (let i = 0; i < 20; i++) { // Allow up to 20 images
+      const file = formData.get(`image-${i}`) as File | null
+      if (file && file.size > 0) {
+        imageFiles.push(file)
+      }
+    }
 
     let voiceUrl: string | null = null
     const imageUrls: string[] = []
@@ -121,17 +138,42 @@ export async function submitComplaint(formData: FormData) {
       voiceUrl = await uploadMedia(voiceBuffer, voiceFile.name, 'voice-complaints')
     }
 
-    if (imageFiles && imageFiles.length > 0) {
+    if (imageFiles.length > 0) {
       for (const imageFile of imageFiles) {
-        if (imageFile.size > 0) {
-          const imageBuffer = Buffer.from(await imageFile.arrayBuffer())
-          const url = await uploadMedia(imageBuffer, imageFile.name, 'image-complaints')
-          imageUrls.push(url)
-        }
+        const imageBuffer = Buffer.from(await imageFile.arrayBuffer())
+        const url = await uploadMedia(imageBuffer, imageFile.name, 'image-complaints')
+        imageUrls.push(url)
       }
     }
 
     // Step 5: Save to database
+    // Use edited summary and department if provided, otherwise perform normal processing
+    // NOTE: In the new flow, the client might send final data directly. 
+    // But for security, we should re-validate or reuse the passed data carefully. 
+    // To support the new "Preview" flow where AI ran *before* submit, we need to accept overrides.
+
+    const editedSummary = formData.get('editedSummary') as string | null
+    const editedDepartment = formData.get('editedDepartment') as string | null
+    const locationJson = formData.get('location') as string | null
+    const address = formData.get('address') as string | null
+
+    const complainSummary = editedSummary || aiResult.summarization!.citizenSummary
+    const complaintDepartment = editedDepartment || aiResult.classification!.department
+
+    // Parse location from JSON
+    let finalLocationLat: number | null = null
+    let finalLocationLng: number | null = null
+
+    if (locationJson) {
+      try {
+        const loc = JSON.parse(locationJson)
+        finalLocationLat = loc.lat
+        finalLocationLng = loc.lng
+      } catch (e) { 
+        console.error('Failed to parse location JSON:', e)
+      }
+    }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -139,12 +181,11 @@ export async function submitComplaint(formData: FormData) {
       citizen_text: formData.get('text') as string | null,
       citizen_voice_url: voiceUrl,
       citizen_image_urls: imageUrls.length > 0 ? imageUrls : null,
-      location_lat: normalizedInput.location?.lat || null,
-      location_lng: normalizedInput.location?.lng || null,
-      location_manual: normalizedInput.manualLocation || null,
-      location_ward: normalizedInput.ward || null,
-      ai_summary: aiResult.summarization!.citizenSummary,
-      ai_department: aiResult.classification!.department,
+      location_lat: finalLocationLat,
+      location_lng: finalLocationLng,
+      location_address: address || null,
+      ai_summary: complainSummary,
+      ai_department: complaintDepartment,
       ai_issue_type: aiResult.classification!.issueType,
       ai_priority: aiResult.scoring!.priority,
       ai_priority_explanation: aiResult.scoring!.explanation,
@@ -168,8 +209,8 @@ export async function submitComplaint(formData: FormData) {
     return {
       success: true,
       complaintId: (data as any).id,
-      summary: aiResult.summarization!.citizenSummary,
-      department: aiResult.classification!.department,
+      summary: complainSummary,
+      department: complaintDepartment,
       priority: aiResult.scoring!.priority,
     }
   } catch (error) {
@@ -248,38 +289,74 @@ export async function getComplaints(filters?: {
   }
 }
 
+
+/**
+ * Analyze complaint before submission (for preview)
+ */
+export async function analyzeComplaintPreSubmit(formData: FormData) {
+  try {
+    const normalizedInput = await normalizeInputs(formData);
+    const aiResult = await processComplaint(normalizedInput);
+
+    // If validation failed, return validation message and needsClarification
+    if (!aiResult.validation.isValid) {
+      return {
+        success: false,
+        message: aiResult.validation.validationMessage || 'Complaint validation failed',
+        needsClarification: aiResult.validation.needsClarification,
+        clarificationQuestions: aiResult.validation.clarificationQuestions,
+      };
+    }
+
+    // Defensive: check all required AI outputs
+    if (!aiResult.summarization || !aiResult.classification || !aiResult.scoring) {
+      return {
+        success: false,
+        message: 'AI processing failed to generate required outputs.',
+      };
+    }
+
+    return {
+      success: true,
+      analysis: {
+        summary: aiResult.summarization.citizenSummary,
+        department: aiResult.classification.department,
+        issueType: aiResult.classification.issueType,
+        priority: aiResult.scoring.priority,
+        keywords: aiResult.summarization.keywords,
+      },
+    };
+  } catch (error) {
+    console.error('Pre-submit analysis error:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to analyze complaint',
+    };
+  }
+}
+
+
+
 /**
  * Update complaint status (for officers)
  */
-export async function updateComplaintStatus(
-  complaintId: string,
-  status: 'pending' | 'in_progress' | 'resolved' | 'rejected',
-  rejectionReason?: string
-) {
+export async function updateComplaintStatus(complaintId: string, newStatus: string) {
   try {
-    await requireOfficer()
-    const supabase = await createClient()
-
-    const updateData: any = { status }
-    if (rejectionReason) {
-      updateData.rejection_reason = rejectionReason
-    }
-
+    await requireOfficer();
+    const supabase = await createClient();
     const { error } = await supabase
       .from('complaints')
-      .update(updateData as any)
-      .eq('id', complaintId)
-
+      .update({ status: newStatus } as any)
+      .eq('id', complaintId);
     if (error) {
-      throw new Error(`Failed to update status: ${error.message}`)
+      throw new Error(`Failed to update status: ${error.message}`);
     }
-
-    return { success: true }
+    return { success: true };
   } catch (error) {
-    console.error('Update status error:', error)
+    console.error('Update status error:', error);
     return {
       success: false,
       message: error instanceof Error ? error.message : 'Failed to update status',
-    }
+    };
   }
 }

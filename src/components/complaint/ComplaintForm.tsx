@@ -142,6 +142,18 @@ export default function ComplaintForm({ preloadedImages = [] }: ComplaintFormPro
       return
     }
 
+    // ✅ Skip if already analyzing to prevent duplicate calls
+    if (isAnalyzing) {
+      console.log('Analysis already in progress, skipping duplicate call')
+      return
+    }
+
+    // ✅ Skip if we already have valid analysis results (unless user explicitly re-analyzes)
+    if (aiAnalysis?.imageDescriptions && aiAnalysis.imageDescriptions.length === images.length) {
+      console.log('Using cached AI analysis results')
+      return
+    }
+
     console.log('Starting AI analysis for', images.length, 'images...')
     setIsAnalyzing(true)
     try {
@@ -616,7 +628,11 @@ export default function ComplaintForm({ preloadedImages = [] }: ComplaintFormPro
                           type="button"
                           size="sm"
                           variant="secondary"
-                          onClick={handleAnalyzeImages}
+                          onClick={() => {
+                            // Clear cached analysis to force fresh analysis
+                            setAiAnalysis(null)
+                            handleAnalyzeImages()
+                          }}
                           disabled={isAnalyzing}
                         >
                           {isAnalyzing ? "Analyzing..." : "Re-Analyze w/ AI"}

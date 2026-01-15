@@ -74,7 +74,7 @@ export default function Sidebar({ user, profile, isCollapsed, onToggle }: Sideba
     return (
         <aside 
             className={cn(
-                "fixed left-0 top-0 z-50 h-screen transition-all duration-300 ease-in-out border-r bg-white/90 backdrop-blur-xl flex flex-col shadow-2xl",
+                "fixed left-0 top-0 z-50 h-screen transition-all duration-300 ease-in-out border-r bg-white/90 backdrop-blur-xl hidden lg:flex flex-col shadow-2xl",
                 isCollapsed ? "w-20" : "w-64"
             )}
         >

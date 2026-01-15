@@ -12,9 +12,11 @@ import {
   Zap, 
   BarChart3,
   ArrowRight,
-  CheckCircle2
+  CheckCircle2,
+  TrendingUp
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 
 export default function Home() {
   return (
@@ -140,6 +142,55 @@ export default function Home() {
               <div className="flex items-center gap-2 text-gray-400 font-bold text-xs uppercase tracking-tighter">
                 <CheckCircle2 size={16} className="text-blue-500" />
                 <span>24/7 Monitoring</span>
+              </div>
+            </motion.div>
+
+            {/* Intelligence Showcase */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="mt-32 text-left"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="h-px flex-1 bg-slate-200" />
+                <h2 className="text-xs uppercase tracking-[0.3em] font-black text-[#0B3C5D]/40">Intelligence Stack</h2>
+                <div className="h-px flex-1 bg-slate-200" />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <Card className="bg-white/40 backdrop-blur-sm border-none shadow-sm p-6 hover:shadow-md transition-shadow">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
+                    <TrendingUp size={24} />
+                  </div>
+                  <h4 className="font-bold text-slate-800 mb-2">Strategic Analytics</h4>
+                  <p className="text-xs text-slate-500 leading-relaxed font-medium">Real-time trend analysis used for data-driven policy improvements and resource allocation.</p>
+                </Card>
+
+                <Card className="bg-white/40 backdrop-blur-sm border-none shadow-sm p-6 hover:shadow-md transition-shadow">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4">
+                    <Zap size={24} />
+                  </div>
+                  <h4 className="font-bold text-slate-800 mb-2">Social Awareness</h4>
+                  <p className="text-xs text-slate-500 leading-relaxed font-medium">Multi-channel monitoring including social media ingestion for higher civic coverage.</p>
+                </Card>
+
+                <Card className="bg-white/40 backdrop-blur-sm border-none shadow-sm p-6 hover:shadow-md transition-shadow">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
+                    <ShieldCheck size={24} />
+                  </div>
+                  <h4 className="font-bold text-slate-800 mb-2">Spatial Intelligence</h4>
+                  <p className="text-xs text-slate-500 leading-relaxed font-medium">Advanced hot-spot mapping to identify systemic infrastructure failures across Manipur.</p>
+                </Card>
+              </div>
+
+              <div className="mt-12 flex justify-center">
+                <Link href="/dashboard">
+                  <Button variant="ghost" className="text-xs font-black text-indigo-600 uppercase tracking-widest hover:bg-white hover:text-indigo-700 font-bold group">
+                    Explore Intelligence Portal 
+                    <ArrowRight size={14} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </Link>
               </div>
             </motion.div>
           </div>

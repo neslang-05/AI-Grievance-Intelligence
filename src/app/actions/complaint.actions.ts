@@ -76,7 +76,10 @@ async function normalizeInputs(formData: FormData): Promise<NormalizedInput> {
   }
 
   // Process images to descriptions
-  if (imageFiles && imageFiles.length > 0) {
+  const existingDescriptions = formData.getAll('imageDescriptions') as string[]
+  if (existingDescriptions.length > 0) {
+    normalized.imageDescriptions = existingDescriptions
+  } else if (imageFiles && imageFiles.length > 0) {
     for (const imageFile of imageFiles) {
       if (imageFile.size > 0) {
         try {
@@ -324,6 +327,7 @@ export async function analyzeComplaintPreSubmit(formData: FormData) {
         issueType: aiResult.classification.issueType,
         priority: aiResult.scoring.priority,
         keywords: aiResult.summarization.keywords,
+        imageDescriptions: normalizedInput.imageDescriptions,
       },
     };
   } catch (error) {

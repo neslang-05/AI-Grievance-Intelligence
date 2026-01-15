@@ -53,12 +53,12 @@ export default function ComplaintForm({ preloadedImages = [] }: ComplaintFormPro
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [locationAccepted, setLocationAccepted] = useState(false)
 
-  // AI Analysis Results
   const [aiAnalysis, setAiAnalysis] = useState<{
     summary: string;
     department: string;
     priority: string;
     keywords: string[];
+    imageDescriptions?: string[];
   } | null>(null)
   
   const [selectedDepartment, setSelectedDepartment] = useState('')
@@ -162,7 +162,8 @@ export default function ComplaintForm({ preloadedImages = [] }: ComplaintFormPro
           summary: res.analysis.summary,
           department: res.analysis.department,
           priority: res.analysis.priority,
-          keywords: res.analysis.keywords || []
+          keywords: res.analysis.keywords || [],
+          imageDescriptions: res.analysis.imageDescriptions
         })
         
         // Only pre-fill if user hasn't typed anything yet
@@ -253,6 +254,13 @@ export default function ComplaintForm({ preloadedImages = [] }: ComplaintFormPro
         formData.append('editedDepartment', selectedDepartment)
       }
       formData.append('editedSummary', text)
+
+      // 🎯 Pass existing image descriptions to avoid re-analysis
+      if (aiAnalysis?.imageDescriptions) {
+        aiAnalysis.imageDescriptions.forEach(desc => {
+          formData.append('imageDescriptions', desc)
+        })
+      }
 
       // 🎯 Convert base64 images to blobs and append to form
       images.forEach((img, i) => {

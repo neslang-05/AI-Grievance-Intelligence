@@ -1,8 +1,17 @@
 import { OpenAIClient, AzureKeyCredential } from '@azure/openai'
 
-const endpoint = process.env.AZURE_OPENAI_ENDPOINT!
-const apiKey = process.env.AZURE_OPENAI_API_KEY!
-const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT_NAME!
+const endpoint = process.env.AZURE_OPENAI_ENDPOINT
+const apiKey = process.env.AZURE_OPENAI_API_KEY
+const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT_NAME
+
+// Validate required environment variables
+if (!endpoint || !apiKey || !deploymentName) {
+  console.error('❌ Missing Azure OpenAI environment variables:')
+  if (!endpoint) console.error('  - AZURE_OPENAI_ENDPOINT')
+  if (!apiKey) console.error('  - AZURE_OPENAI_API_KEY')
+  if (!deploymentName) console.error('  - AZURE_OPENAI_DEPLOYMENT_NAME')
+  throw new Error('Azure OpenAI configuration incomplete. Please check your .env file.')
+}
 
 export const azureOpenAIClient = new OpenAIClient(endpoint, new AzureKeyCredential(apiKey))
 
@@ -10,7 +19,7 @@ export async function analyzeImage(imageBase64: string, prompt: string): Promise
   console.log('Sending image to Azure OpenAI for analysis...')
   try {
     const response = await azureOpenAIClient.getChatCompletions(
-      deploymentName,
+      deploymentName!,
       [
         {
           role: 'user',
@@ -45,7 +54,7 @@ export async function generateCompletion(
 ): Promise<string> {
   try {
     const response = await azureOpenAIClient.getChatCompletions(
-      deploymentName,
+      deploymentName!,
       [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
@@ -69,7 +78,7 @@ export async function generateStructuredCompletion<T>(
 
   try {
     const response = await azureOpenAIClient.getChatCompletions(
-      deploymentName,
+      deploymentName!,
       [
         { role: 'system', content: systemPrompt + '\n\nYou must respond with valid JSON only, without any markdown formatting or code blocks.' },
         { role: 'user', content: fullPrompt },

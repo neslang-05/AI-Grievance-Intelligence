@@ -7,13 +7,11 @@ export default function Header() {
     return (
         <header className="bg-white shadow-sm sticky top-0 z-40">
             <div className="max-w-7xl mx-auto px-3 py-3 flex items-center justify-between">
-                <Link href="/" className="flex items-center gap-2">
-                    <div className="w-10 h-10 bg-[#0F4C81] rounded-lg flex items-center justify-center overflow-hidden">
-                        <img src="/icons/unitydesk-logo.svg" alt="UnityDesk" className="w-full h-full" />
-                    </div>
+                <Link href="/" className="flex items-center gap-3">
+                    <img src="/favicon.svg" alt="UnityDesk" className="w-10 h-10 object-contain shadow-sm rounded-lg" />
                     <div>
-                        <h1 className="text-base font-bold text-[#0B3C5D]">UnityDesk</h1>
-                        <p className="text-[10px] text-gray-600">Unified Grievance System</p>
+                        <h1 className="text-xl font-bold text-[#0B3C5D] tracking-tight">UnityDesk</h1>
+                        <p className="text-[10px] text-gray-500 font-medium uppercase tracking-widest">Unified Grievance System</p>
                     </div>
                 </Link>
                 <Link

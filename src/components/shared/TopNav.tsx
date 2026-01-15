@@ -29,7 +29,7 @@ export default async function TopNav() {
 
                 {/* Desktop Navigation */}
                 <div className="hidden md:flex items-center gap-4">
-                    <Link href="/submit" className="text-sm font-medium hover:text-[#0F4C81] transition-colors">
+                    <Link href="/new-submit" className="text-sm font-medium hover:text-[#0F4C81] transition-colors">
                         Submit
                     </Link>
                     <Link href="/status" className="text-sm font-medium hover:text-[#0F4C81] transition-colors">

@@ -15,7 +15,7 @@ if (!endpoint || !apiKey || !deploymentName) {
 
 export const azureOpenAIClient = new OpenAIClient(endpoint, new AzureKeyCredential(apiKey))
 
-export async function analyzeImage(imageBase64: string, prompt: string): Promise<string> {
+export async function analyzeImage(imageBase64: string, prompt: string, useHighDetail: boolean = false): Promise<string> {
   console.log('Sending image to Azure OpenAI for analysis...')
   try {
     const response = await azureOpenAIClient.getChatCompletions(
@@ -29,13 +29,20 @@ export async function analyzeImage(imageBase64: string, prompt: string): Promise
             {
               type: 'image_url',
               imageUrl: {
-                url: `data:image/jpeg;base64,${imageBase64}`
+                url: `data:image/jpeg;base64,${imageBase64}`,
+                // Use 'low' detail mode for 3-5x faster processing
+                // Only use 'high' for images requiring fine details
+                detail: useHighDetail ? 'high' : 'low'
               }
             }
           ],
         },
       ],
-      { maxTokens: 500 }
+      { 
+        maxTokens: 500,
+        // Lower temperature for faster, more deterministic responses
+        temperature: 0.1
+      }
     )
 
     const content = response.choices[0]?.message?.content || ''

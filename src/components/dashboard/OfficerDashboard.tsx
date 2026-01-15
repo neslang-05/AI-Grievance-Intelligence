@@ -6,12 +6,18 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getComplaints, updateComplaintStatus } from '@/app/actions/complaint.actions'
 import { Complaint } from '@/types/database.types'
-import { AlertCircle, CheckCircle, Clock, XCircle, MapPin, Calendar } from 'lucide-react'
+import { AlertCircle, CheckCircle, Clock, XCircle, MapPin, Calendar, Search, Filter, ArrowRight } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { StatsRibbon } from './StatsRibbon'
+import { SpatialHeatmap } from './SpatialHeatmap'
+import { AnalyticsCharts } from './AnalyticsCharts'
+import { Input } from '@/components/ui/input'
 
 export default function OfficerDashboard() {
   const [complaints, setComplaints] = useState<Complaint[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'pending' | 'in_progress' | 'resolved'>('all')
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     loadComplaints()
@@ -38,221 +44,201 @@ export default function OfficerDashboard() {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high':
-        return 'bg-red-100 text-red-800'
+        return 'bg-red-50 text-red-700 border-red-100'
       case 'medium':
-        return 'bg-yellow-100 text-yellow-800'
+        return 'bg-amber-50 text-amber-700 border-amber-100'
       case 'low':
-        return 'bg-blue-100 text-blue-800'
+        return 'bg-blue-50 text-blue-700 border-blue-100'
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-slate-50 text-slate-700 border-slate-100'
     }
   }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Clock className="h-5 w-5 text-yellow-600" />
+        return <Clock className="h-5 w-5 text-amber-500" />
       case 'in_progress':
-        return <AlertCircle className="h-5 w-5 text-blue-600" />
+        return <AlertCircle className="h-5 w-5 text-blue-500" />
       case 'resolved':
-        return <CheckCircle className="h-5 w-5 text-green-600" />
+        return <CheckCircle className="h-5 w-5 text-emerald-500" />
       case 'rejected':
-        return <XCircle className="h-5 w-5 text-red-600" />
+        return <XCircle className="h-5 w-5 text-rose-500" />
       default:
         return null
     }
   }
 
-  const filteredComplaints = complaints.filter((c) =>
-    filter === 'all' || c.status === filter
-  )
+  const filteredComplaints = complaints.filter((c) => {
+    const matchesStatus = filter === 'all' || c.status === filter
+    const matchesSearch = c.ai_issue_type.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         c.ai_summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         c.ai_department.toLowerCase().includes(searchQuery.toLowerCase())
+    return matchesStatus && matchesSearch
+  })
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-primary">Officer Dashboard</h1>
-        <p className="text-muted-foreground">Manage and track civic complaints</p>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Total Complaints</CardDescription>
-            <CardTitle className="text-3xl">{complaints.length}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Pending</CardDescription>
-            <CardTitle className="text-3xl text-yellow-600">
-              {complaints.filter((c) => c.status === 'pending').length}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>In Progress</CardDescription>
-            <CardTitle className="text-3xl text-blue-600">
-              {complaints.filter((c) => c.status === 'in_progress').length}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Resolved</CardDescription>
-            <CardTitle className="text-3xl text-green-600">
-              {complaints.filter((c) => c.status === 'resolved').length}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <Tabs defaultValue="all" className="mb-6" onValueChange={(v) => setFilter(v as any)}>
-        <TabsList>
-          <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="pending">Pending</TabsTrigger>
-          <TabsTrigger value="in_progress">In Progress</TabsTrigger>
-          <TabsTrigger value="resolved">Resolved</TabsTrigger>
-        </TabsList>
-      </Tabs>
-
-      {/* Complaints List */}
-      {loading ? (
-        <div className="text-center py-12 text-muted-foreground">Loading complaints...</div>
-      ) : filteredComplaints.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">No complaints found</div>
-      ) : (
-        <div className="space-y-4">
-          {filteredComplaints.map((complaint) => (
-            <Card key={complaint.id}>
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      {getStatusIcon(complaint.status)}
-                      <CardTitle className="text-xl">
-                        {complaint.ai_issue_type}
-                      </CardTitle>
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-semibold ${getPriorityColor(
-                          complaint.ai_priority
-                        )}`}
-                      >
-                        {complaint.ai_priority.toUpperCase()}
-                      </span>
-                    </div>
-                    <CardDescription className="text-base">
-                      {complaint.ai_summary}
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <strong>Department:</strong> {complaint.ai_department}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    {new Date(complaint.created_at).toLocaleDateString()}
-                  </div>
-                  {complaint.location_address && (
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      <span className="truncate max-w-xs">{complaint.location_address}</span>
-                    </div>
-                  )}
-                  <div>
-                    <strong>Confidence:</strong> {(complaint.ai_confidence * 100).toFixed(0)}%
-                  </div>
-                </div>
-
-                {complaint.ai_priority_explanation && (
-                  <div className="mb-4 p-3 bg-muted rounded-md text-sm">
-                    <strong>Priority Reason:</strong> {complaint.ai_priority_explanation}
-                  </div>
-                )}
-
-                {complaint.citizen_text && (
-                  <div className="mb-4">
-                    <strong className="text-sm">Citizen Description:</strong>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {complaint.citizen_text}
-                    </p>
-                  </div>
-                )}
-
-                {complaint.citizen_image_urls && complaint.citizen_image_urls.length > 0 && (
-                  <div className="mb-4">
-                    <strong className="text-sm flex items-center gap-2 mb-2">
-                      📸 Evidence Images ({complaint.citizen_image_urls.length})
-                    </strong>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {complaint.citizen_image_urls.map((url, idx) => (
-                        <a
-                          key={idx}
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="group relative block overflow-hidden rounded-lg border-2 border-gray-200 hover:border-blue-400 transition-all shadow-sm hover:shadow-md"
-                        >
-                          <img
-                            src={url}
-                            alt={`Evidence ${idx + 1}`}
-                            className="w-full h-28 object-cover group-hover:scale-105 transition-transform duration-200"
-                          />
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                            <span className="opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs font-medium bg-black/60 px-2 py-1 rounded">
-                              Click to view
-                            </span>
-                          </div>
-                          <div className="absolute bottom-1 right-1 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded">
-                            {idx + 1}
-                          </div>
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex gap-2">
-                  {complaint.status === 'pending' && (
-                    <>
-                      <Button
-                        size="sm"
-                        onClick={() => handleStatusChange(complaint.id, 'in_progress')}
-                      >
-                        Start Working
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleStatusChange(complaint.id, 'rejected')}
-                      >
-                        Reject
-                      </Button>
-                    </>
-                  )}
-                  {complaint.status === 'in_progress' && (
-                    <Button
-                      size="sm"
-                      variant="default"
-                      onClick={() => handleStatusChange(complaint.id, 'resolved')}
-                    >
-                      Mark Resolved
-                    </Button>
-                  )}
-                  {complaint.status === 'resolved' && (
-                    <span className="text-green-600 font-semibold">✓ Resolved</span>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+    <div className="max-w-[1600px] mx-auto px-6 py-8">
+      {/* Premium Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+        <div>
+          <motion.h1 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="text-4xl font-extrabold text-slate-900 tracking-tight"
+          >
+            Intelligence <span className="text-indigo-600">Portal</span>
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-slate-500 mt-2 font-medium"
+          >
+            Centrally monitoring city grievances and AI-driven resolution workflows
+          </motion.p>
         </div>
-      )}
+        
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Input 
+              placeholder="Search intelligence..." 
+              className="pl-10 w-64 bg-white/50 border-slate-200 focus:bg-white transition-all shadow-sm rounded-xl"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <Button variant="outline" className="rounded-xl border-slate-200 bg-white/50">
+            <Filter className="h-4 w-4 mr-2" />
+            Filters
+          </Button>
+        </div>
+      </div>
+
+      {/* Intelligence Grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+        {/* Left Column - Spatial & Analytical (Main Insight) */}
+        <div className="xl:col-span-8 space-y-8">
+          <StatsRibbon stats={{
+            total: complaints.length,
+            pending: complaints.filter(c => c.status === 'pending').length,
+            inProgress: complaints.filter(c => c.status === 'in_progress').length,
+            resolved: complaints.filter(c => c.status === 'resolved').length
+          }} />
+          
+          <SpatialHeatmap complaints={complaints} />
+          
+          <AnalyticsCharts complaints={complaints} />
+        </div>
+
+        {/* Right Column - Management & Feed */}
+        <div className="xl:col-span-4 space-y-6">
+          <div className="bg-white/70 backdrop-blur-md rounded-2xl border border-slate-200/50 shadow-xl overflow-hidden flex flex-col h-full max-h-[1200px]">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white/80 z-10">
+              <h2 className="text-xl font-bold text-slate-800">Operational Queue</h2>
+              <Tabs defaultValue="all" onValueChange={(v) => setFilter(v as any)}>
+                <TabsList className="bg-slate-100/50">
+                  <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
+                  <TabsTrigger value="pending" className="text-xs">Pending</TabsTrigger>
+                  <TabsTrigger value="resolved" className="text-xs">Done</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {loading ? (
+                <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+                  <motion.div 
+                    animate={{ rotate: 360 }}
+                    transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                  >
+                    <Clock className="h-8 w-8 mb-4 opacity-20" />
+                  </motion.div>
+                  <p className="text-sm font-medium">Analyzing database...</p>
+                </div>
+              ) : filteredComplaints.length === 0 ? (
+                <div className="text-center py-20 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+                  <p className="text-slate-400 font-medium">No records matching criteria</p>
+                </div>
+              ) : (
+                <AnimatePresence mode="popLayout">
+                  {filteredComplaints.map((complaint) => (
+                    <motion.div
+                      key={complaint.id}
+                      layout
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                    >
+                      <Card className="border-slate-200/60 hover:border-indigo-200 transition-all duration-300 hover:shadow-lg group">
+                        <CardHeader className="p-4 pb-2">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                {getStatusIcon(complaint.status)}
+                                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${getPriorityColor(complaint.ai_priority)}`}>
+                                  {complaint.ai_priority}
+                                </span>
+                              </div>
+                              <CardTitle className="text-sm font-bold text-slate-800 line-clamp-1">
+                                {complaint.ai_issue_type}
+                              </CardTitle>
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-medium whitespace-nowrap">
+                              {new Date(complaint.created_at).toLocaleDateString()}
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="p-4 pt-0">
+                          <p className="text-xs text-slate-500 line-clamp-2 mb-4 leading-relaxed">
+                            {complaint.ai_summary}
+                          </p>
+                          
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">
+                              <MapPin size={10} />
+                              {complaint.ai_department}
+                            </div>
+                            
+                            <div className="flex gap-2">
+                              {complaint.status === 'pending' && (
+                                <Button 
+                                  size="sm" 
+                                  className="h-8 px-3 text-xs bg-indigo-600 hover:bg-indigo-700 rounded-lg group-hover:translate-x-1 transition-transform"
+                                  onClick={() => handleStatusChange(complaint.id, 'in_progress')}
+                                >
+                                  Process <ArrowRight className="h-3 w-3 ml-1" />
+                                </Button>
+                              )}
+                              {complaint.status === 'in_progress' && (
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  className="h-8 px-3 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-50 rounded-lg"
+                                  onClick={() => handleStatusChange(complaint.id, 'resolved')}
+                                >
+                                  Complete
+                                </Button>
+                              )}
+                              {complaint.status === 'resolved' && (
+                                <div className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+                                  <CheckCircle size={10} /> Resolved
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              )
+              }
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

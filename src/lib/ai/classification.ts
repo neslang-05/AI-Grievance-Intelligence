@@ -26,7 +26,8 @@ export async function classifyComplaint(
 Extracted Issue: ${extractedIssue}
 Text: ${input.textContent || 'None'}
 Image Descriptions: ${input.imageDescriptions.join(', ') || 'None'}
-Location: ${input.manualLocation || 'GPS coordinates'}
+Location: ${input.address || 'GPS coordinates'}
+Coordinates: ${input.location ? `${input.location.lat}, ${input.location.lng}` : 'Not provided'}
 `.trim()
 
   const schema = `{

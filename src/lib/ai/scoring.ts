@@ -30,11 +30,22 @@ Department: ${department}
   "explanation": string
 }`
 
-  const result = await generateStructuredCompletion<AIScoringResult>(
-    SCORING_SYSTEM_PROMPT,
-    `Score the priority of this complaint:\n\n${context}\n\nProvide priority, severity (1-10), urgency (1-10), and citizen-friendly explanation.`,
-    schema
-  )
+  try {
+    const result = await generateStructuredCompletion<AIScoringResult>(
+      SCORING_SYSTEM_PROMPT,
+      `Score the priority of this complaint:\n\n${context}\n\nProvide priority, severity (1-10), urgency (1-10), and citizen-friendly explanation.`,
+      schema
+    )
 
-  return result
+    return result
+  } catch (error) {
+    console.error('Scoring error:', error)
+    // Fallback scoring
+    return {
+      priority: 'medium', // Default
+      severity: 5,
+      urgency: 5,
+      explanation: 'Complaint received and under review.'
+    }
+  }
 }

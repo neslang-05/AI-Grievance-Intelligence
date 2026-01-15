@@ -1,12 +1,17 @@
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+export const createClient = () => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+  if (!url || !anonKey) {
+    console.warn('Supabase credentials missing! Dynamic features may fail.')
+    // Return a dummy client or handle appropriately during build
+    return createBrowserClient(
+      url || 'https://placeholder.supabase.co',
+      anonKey || 'placeholder'
+    )
+  }
 
-// Server-side client with service role
-export const getServiceSupabase = () => {
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-  return createClient(supabaseUrl, supabaseServiceKey)
+  return createBrowserClient(url, anonKey)
 }

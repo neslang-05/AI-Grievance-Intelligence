@@ -19,8 +19,7 @@ export interface Database {
           citizen_image_urls: string[] | null
           location_lat: number | null
           location_lng: number | null
-          location_manual: string | null
-          location_ward: string | null
+          location_address: string | null
           ai_summary: string
           ai_department: string
           ai_issue_type: string
@@ -41,8 +40,7 @@ export interface Database {
           citizen_image_urls?: string[] | null
           location_lat?: number | null
           location_lng?: number | null
-          location_manual?: string | null
-          location_ward?: string | null
+          location_address?: string | null
           ai_summary: string
           ai_department: string
           ai_issue_type: string
@@ -63,8 +61,7 @@ export interface Database {
           citizen_image_urls?: string[] | null
           location_lat?: number | null
           location_lng?: number | null
-          location_manual?: string | null
-          location_ward?: string | null
+          location_address?: string | null
           ai_summary?: string
           ai_department?: string
           ai_issue_type?: string

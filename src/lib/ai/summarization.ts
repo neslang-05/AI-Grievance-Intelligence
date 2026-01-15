@@ -23,19 +23,28 @@ Location: ${location || 'Not specified'}
 
   const prompt = `Create a citizen-friendly summary (2-3 sentences) for this complaint:\n\n${fullContext}\n\nAlso provide 3-5 keywords for searchability.`
 
-  const response = await generateCompletion(SUMMARIZATION_SYSTEM_PROMPT, prompt, 0.4)
+  try {
+    const response = await generateCompletion(SUMMARIZATION_SYSTEM_PROMPT, prompt, 0.4)
 
-  // Parse response (expected format: summary text, then "Keywords: word1, word2...")
-  const parts = response.split('Keywords:')
-  const summary = parts[0].trim()
-  const keywordString = parts[1]?.trim() || ''
-  const keywords = keywordString
-    .split(',')
-    .map((k) => k.trim())
-    .filter((k) => k.length > 0)
+    // Parse response (expected format: summary text, then "Keywords: word1, word2...")
+    const parts = response.split('Keywords:')
+    const summary = parts[0].trim()
+    const keywordString = parts[1]?.trim() || ''
+    const keywords = keywordString
+      .split(',')
+      .map((k) => k.trim())
+      .filter((k) => k.length > 0)
 
-  return {
-    citizenSummary: summary,
-    keywords,
+    return {
+      citizenSummary: summary,
+      keywords,
+    }
+  } catch (error) {
+    console.error('Summarization error:', error)
+    // Fallback summarization
+    return {
+      citizenSummary: extractedIssue || 'Complaint submitted successfully.',
+      keywords: ['grievance', 'unclassified']
+    }
   }
 }

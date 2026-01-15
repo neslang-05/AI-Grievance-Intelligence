@@ -6,8 +6,7 @@ export interface ComplaintInput {
     lat: number
     lng: number
   }
-  manualLocation?: string
-  ward?: string
+  address?: string
 }
 
 export interface AIValidationResult {
@@ -63,6 +62,5 @@ export interface NormalizedInput {
     lat: number
     lng: number
   }
-  manualLocation?: string
-  ward?: string
+  address?: string
 }

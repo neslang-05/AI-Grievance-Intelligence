@@ -28,9 +28,17 @@ export async function transcribeAudio(audioBuffer: Buffer): Promise<string> {
     }
 
     recognizer.canceled = (_s, e) => {
-      console.error(`Speech recognition canceled: ${e.errorDetails}`)
+      const errorDetails = e.errorDetails || e.errorCode || 'Unknown error'
+      const reason = e.reason ? sdk.CancellationReason[e.reason] : 'Unknown reason'
+      console.error(`Speech recognition canceled: ${reason} - ${errorDetails}`)
       recognizer.close()
-      reject(new Error(`Speech recognition failed: ${e.errorDetails}`))
+
+      // If no speech was detected or it was intentionally stopped, return empty transcript
+      if (e.reason === sdk.CancellationReason.EndOfStream || transcript.trim()) {
+        resolve(transcript.trim())
+      } else {
+        reject(new Error(`Speech recognition failed: ${reason} - ${errorDetails}`))
+      }
     }
 
     recognizer.sessionStopped = () => {

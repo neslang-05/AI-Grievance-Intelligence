@@ -15,12 +15,8 @@ export async function validateComplaint(input: NormalizedInput): Promise<AIValid
 Text: ${input.textContent || 'None'}
 Image Descriptions: ${input.imageDescriptions.join(', ') || 'None'}
 Voice Transcript: ${input.voiceTranscript || 'None'}
-Location: ${
-    input.manualLocation || input.location
-      ? `${input.location?.lat}, ${input.location?.lng}`
-      : 'Not provided'
-  }
-Ward: ${input.ward || 'Not provided'}
+Location: ${input.address || 'Not provided'}
+Coordinates: ${input.location ? `${input.location.lat}, ${input.location.lng}` : 'Not provided'}
 `.trim()
 
   const schema = `{
@@ -29,8 +25,8 @@ Ward: ${input.ward || 'Not provided'}
   "isUnderstandable": boolean,
   "isSpam": boolean,
   "needsClarification": boolean,
-  "clarificationQuestions": string[] | undefined,
-  "validationMessage": string | undefined
+  "clarificationQuestions": string[] | null,
+  "validationMessage": string | null
 }`
 
   try {

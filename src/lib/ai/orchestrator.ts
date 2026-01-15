@@ -36,7 +36,7 @@ export async function processComplaint(input: NormalizedInput): Promise<AIProces
   const summarization = await summarizeComplaint(
     understanding.extractedIssue,
     understanding.context,
-    input.manualLocation ||
+    input.address ||
       (input.location ? `${input.location.lat}, ${input.location.lng}` : undefined)
   )
 

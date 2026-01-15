@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { MapPin, Edit3, User, Image as ImageIcon, Navigation, Search, Loader2, Download, Check } from 'lucide-react'
+import { MapPin, Edit3, User as UserIcon, Image as ImageIcon, Navigation, Search, Loader2, Download, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { submitComplaint, updateComplaintSummary, analyzeComplaintPreSubmit } from '@/app/actions/complaint.actions'
 import { createClient } from '@/lib/supabase/client'
+import type { User } from '@supabase/supabase-js'
 import { toast } from 'sonner'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import jsPDF from 'jspdf'
@@ -60,7 +61,7 @@ export default function ComplaintForm({ preloadedImages = [] }: ComplaintFormPro
     keywords: string[];
     imageDescriptions?: string[];
   } | null>(null)
-  
+
   const [selectedDepartment, setSelectedDepartment] = useState('')
 
   // Preview Mode
@@ -96,7 +97,7 @@ export default function ComplaintForm({ preloadedImages = [] }: ComplaintFormPro
   // Search address and get coordinates
   const searchAddress = async () => {
     if (!address.trim()) return
-    
+
     setIsSearchingAddress(true)
     try {
       const response = await fetch(
@@ -122,7 +123,7 @@ export default function ComplaintForm({ preloadedImages = [] }: ComplaintFormPro
   }
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(({ data: { user } }: { data: { user: User | null } }) => {
       setUser(user)
       if (user) setIsAnonymous(false)
     })
@@ -142,6 +143,18 @@ export default function ComplaintForm({ preloadedImages = [] }: ComplaintFormPro
       return
     }
 
+    // ✅ Skip if already analyzing to prevent duplicate calls
+    if (isAnalyzing) {
+      console.log('Analysis already in progress, skipping duplicate call')
+      return
+    }
+
+    // ✅ Skip if we already have valid analysis results (unless user explicitly re-analyzes)
+    if (aiAnalysis?.imageDescriptions && aiAnalysis.imageDescriptions.length === images.length) {
+      console.log('Using cached AI analysis results')
+      return
+    }
+
     console.log('Starting AI analysis for', images.length, 'images...')
     setIsAnalyzing(true)
     try {
@@ -152,9 +165,9 @@ export default function ComplaintForm({ preloadedImages = [] }: ComplaintFormPro
         formData.append(`images`, blob, `image-${i}.jpg`)
         formData.append(`image-${i}`, blob, `image-${i}.jpg`)
       })
-      
+
       // Clear description temporarily if currently empty to show loading placeholder
-      if (!text) setText('') 
+      if (!text) setText('')
 
       const res = await analyzeComplaintPreSubmit(formData)
       if (res.success && res.analysis) {
@@ -165,16 +178,16 @@ export default function ComplaintForm({ preloadedImages = [] }: ComplaintFormPro
           keywords: res.analysis.keywords || [],
           imageDescriptions: res.analysis.imageDescriptions
         })
-        
+
         // Only pre-fill if user hasn't typed anything yet
         if (!text || text.trim().length < 10) {
           setText(res.analysis.summary)
         }
-        
+
         if (!selectedDepartment) {
           setSelectedDepartment(res.analysis.department)
         }
-        
+
         toast.success("AI Analysis Complete: Suggestions updated")
       } else {
         toast.error(res.message || "AI Analysis failed. Please enter details manually.")
@@ -215,7 +228,7 @@ export default function ComplaintForm({ preloadedImages = [] }: ComplaintFormPro
           }
           setIsGettingLocation(false)
         },
-        (err) => {
+        (err: unknown) => {
           console.error('Geolocation error:', err)
           if (!silent) {
             toast.error('Could not get location. Please enter address manually.')
@@ -585,7 +598,7 @@ export default function ComplaintForm({ preloadedImages = [] }: ComplaintFormPro
                 {user && (
                   <div className="mb-6 p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-center justify-between">
                     <div className="flex items-center gap-2 text-[#0B3C5D]">
-                      <User className="h-4 w-4" />
+                      <UserIcon className="h-4 w-4" />
                       <span className="text-sm font-medium">Logged in as {user.email}</span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -616,7 +629,11 @@ export default function ComplaintForm({ preloadedImages = [] }: ComplaintFormPro
                           type="button"
                           size="sm"
                           variant="secondary"
-                          onClick={handleAnalyzeImages}
+                          onClick={() => {
+                            // Clear cached analysis to force fresh analysis
+                            setAiAnalysis(null)
+                            handleAnalyzeImages()
+                          }}
                           disabled={isAnalyzing}
                         >
                           {isAnalyzing ? "Analyzing..." : "Re-Analyze w/ AI"}
@@ -760,7 +777,7 @@ export default function ComplaintForm({ preloadedImages = [] }: ComplaintFormPro
                         <p className="text-xs text-gray-500 text-center">
                           Click on the map to adjust the location pin
                         </p>
-                        
+
                         {/* Location Accept/Reject */}
                         <div className="bg-gray-50 border rounded-lg p-4 space-y-3">
                           <div className="text-sm">
@@ -770,7 +787,7 @@ export default function ComplaintForm({ preloadedImages = [] }: ComplaintFormPro
                               Coordinates: {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
                             </p>
                           </div>
-                          
+
                           {!locationAccepted ? (
                             <div className="flex gap-2">
                               <Button

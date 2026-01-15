@@ -78,7 +78,7 @@ export default function MyComplaintsPage() {
                     <CardContent className="space-y-4">
                         <p className="text-gray-500">You haven't submitted any complaints yet.</p>
                         <Button asChild className="bg-[#0F4C81] hover:bg-[#0B3C5D]">
-                            <Link href="/submit">Submit a Complaint</Link>
+                            <Link href="/new-submit">Submit a Complaint</Link>
                         </Button>
                     </CardContent>
                 </Card>

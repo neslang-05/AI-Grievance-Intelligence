@@ -78,8 +78,10 @@ async function normalizeInputs(formData: FormData): Promise<NormalizedInput> {
   // Process images to descriptions
   const existingDescriptions = formData.getAll('imageDescriptions') as string[]
   if (existingDescriptions.length > 0) {
+    console.log(`✅ Using ${existingDescriptions.length} cached image descriptions - skipping Vision AI`)
     normalized.imageDescriptions = existingDescriptions
   } else if (imageFiles && imageFiles.length > 0) {
+    console.log(`🔍 No cached descriptions found - analyzing ${imageFiles.length} images with Vision AI`)
     for (const imageFile of imageFiles) {
       if (imageFile.size > 0) {
         try {

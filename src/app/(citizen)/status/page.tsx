@@ -28,12 +28,12 @@ export default function StatusPage() {
             const { data, error } = await supabase
                 .from('complaints')
                 .select('*')
-                .eq('id', complaintId)
+                .eq('reference_id', complaintId.trim().toUpperCase())
                 .single()
 
             if (error) {
                 if (error.code === 'PGRST116') {
-                    throw new Error('No complaint found with this ID.')
+                    throw new Error('No complaint found with this Reference ID.')
                 }
                 throw error
             }
@@ -100,7 +100,7 @@ export default function StatusPage() {
                             <Label htmlFor="refId" className="sr-only">Reference ID</Label>
                             <Input
                                 id="refId"
-                                placeholder="Enter Reference ID (e.g., 550e8400-e29b...)"
+                                placeholder="Enter Reference ID (e.g., PW7K2M9X)"
                                 value={complaintId}
                                 onChange={(e) => setComplaintId(e.target.value)}
                                 className="h-12 border-gray-300 focus:border-[#0F4C81] focus:ring-2 focus:ring-blue-100"
@@ -173,7 +173,7 @@ export default function StatusPage() {
                         )}
                     </CardContent>
                     <CardFooter className="bg-gray-50 border-t justify-center py-4">
-                        <p className="text-xs text-gray-500 italic">Reference ID: {complaint.id}</p>
+                        <p className="text-xs text-gray-500 italic">Reference ID: {complaint.reference_id}</p>
                     </CardFooter>
                 </Card>
             )}

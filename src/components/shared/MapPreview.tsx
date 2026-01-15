@@ -46,12 +46,15 @@ function LocationMarker({
     useEffect(() => {
         if (position[0] && position[1]) {
             map.flyTo(position, map.getZoom())
+            
+            // Fix for map tiles not loading correctly in modals/hidden containers
+            setTimeout(() => {
+                map.invalidateSize()
+            }, 100)
         }
     }, [position, map])
 
-    if (!position[0] || !position[1]) return null
-
-    return <Marker position={position} icon={DefaultIcon} />
+    return position[0] && position[1] ? <Marker position={position} icon={DefaultIcon} /> : null
 }
 
 export default function MapPreview({
@@ -82,8 +85,8 @@ export default function MapPreview({
             key={`${lat}-${lng}`} // Force remount when coordinates change significantly
         >
             <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; Google'
+                url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
             />
             <LocationMarker
                 position={position}

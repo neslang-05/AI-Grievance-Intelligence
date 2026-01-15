@@ -6,14 +6,39 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getComplaints, updateComplaintStatus } from '@/app/actions/complaint.actions'
 import { Complaint } from '@/types/database.types'
-import { AlertCircle, CheckCircle, Clock, XCircle, MapPin, Calendar } from 'lucide-react'
+import { 
+  AlertCircle, 
+  CheckCircle, 
+  Clock, 
+  XCircle, 
+  MapPin, 
+  Calendar, 
+  Search, 
+  Filter, 
+  ArrowRight,
+  ShieldCheck,
+  Zap,
+  TrendingUp
+} from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { StatsRibbon } from './StatsRibbon'
+import { MapTilerHeatmap } from './spatial/MapTilerHeatmap'
+import { AnalyticsCharts } from './AnalyticsCharts'
+import { SocialMediaSimulator } from './analytics/SocialMediaSimulator'
+import { PolicyAdvisor } from './analytics/PolicyAdvisor'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
 
 export default function OfficerDashboard() {
   const [complaints, setComplaints] = useState<Complaint[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'pending' | 'in_progress' | 'resolved'>('all')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [activeTab, setActiveTab] = useState('operational')
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
     loadComplaints()
   }, [filter])
 
@@ -38,221 +63,295 @@ export default function OfficerDashboard() {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high':
-        return 'bg-red-100 text-red-800'
+        return 'bg-red-50 text-red-700 border-red-100'
       case 'medium':
-        return 'bg-yellow-100 text-yellow-800'
+        return 'bg-amber-50 text-amber-700 border-amber-100'
       case 'low':
-        return 'bg-blue-100 text-blue-800'
+        return 'bg-emerald-50 text-emerald-700 border-emerald-100'
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-slate-50 text-slate-700 border-slate-100'
     }
   }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Clock className="h-5 w-5 text-yellow-600" />
+        return <Clock className="h-5 w-5 text-amber-500" />
       case 'in_progress':
-        return <AlertCircle className="h-5 w-5 text-blue-600" />
+        return <AlertCircle className="h-5 w-5 text-teal-500" />
       case 'resolved':
-        return <CheckCircle className="h-5 w-5 text-green-600" />
+        return <CheckCircle className="h-5 w-5 text-emerald-500" />
       case 'rejected':
-        return <XCircle className="h-5 w-5 text-red-600" />
+        return <XCircle className="h-5 w-5 text-rose-500" />
       default:
         return null
     }
   }
 
-  const filteredComplaints = complaints.filter((c) =>
-    filter === 'all' || c.status === filter
-  )
+  const filteredComplaints = complaints.filter((c) => {
+    const matchesStatus = filter === 'all' || c.status === filter
+    const matchesSearch = c.ai_issue_type.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         c.ai_summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         c.ai_department.toLowerCase().includes(searchQuery.toLowerCase())
+    return matchesStatus && matchesSearch
+  })
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-primary">Officer Dashboard</h1>
-        <p className="text-muted-foreground">Manage and track civic complaints</p>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Total Complaints</CardDescription>
-            <CardTitle className="text-3xl">{complaints.length}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Pending</CardDescription>
-            <CardTitle className="text-3xl text-yellow-600">
-              {complaints.filter((c) => c.status === 'pending').length}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>In Progress</CardDescription>
-            <CardTitle className="text-3xl text-blue-600">
-              {complaints.filter((c) => c.status === 'in_progress').length}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Resolved</CardDescription>
-            <CardTitle className="text-3xl text-green-600">
-              {complaints.filter((c) => c.status === 'resolved').length}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <Tabs defaultValue="all" className="mb-6" onValueChange={(v) => setFilter(v as any)}>
-        <TabsList>
-          <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="pending">Pending</TabsTrigger>
-          <TabsTrigger value="in_progress">In Progress</TabsTrigger>
-          <TabsTrigger value="resolved">Resolved</TabsTrigger>
-        </TabsList>
-      </Tabs>
-
-      {/* Complaints List */}
-      {loading ? (
-        <div className="text-center py-12 text-muted-foreground">Loading complaints...</div>
-      ) : filteredComplaints.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">No complaints found</div>
-      ) : (
-        <div className="space-y-4">
-          {filteredComplaints.map((complaint) => (
-            <Card key={complaint.id}>
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      {getStatusIcon(complaint.status)}
-                      <CardTitle className="text-xl">
-                        {complaint.ai_issue_type}
-                      </CardTitle>
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-semibold ${getPriorityColor(
-                          complaint.ai_priority
-                        )}`}
-                      >
-                        {complaint.ai_priority.toUpperCase()}
-                      </span>
-                    </div>
-                    <CardDescription className="text-base">
-                      {complaint.ai_summary}
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <strong>Department:</strong> {complaint.ai_department}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    {new Date(complaint.created_at).toLocaleDateString()}
-                  </div>
-                  {complaint.location_address && (
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      <span className="truncate max-w-xs">{complaint.location_address}</span>
-                    </div>
-                  )}
-                  <div>
-                    <strong>Confidence:</strong> {(complaint.ai_confidence * 100).toFixed(0)}%
-                  </div>
-                </div>
-
-                {complaint.ai_priority_explanation && (
-                  <div className="mb-4 p-3 bg-muted rounded-md text-sm">
-                    <strong>Priority Reason:</strong> {complaint.ai_priority_explanation}
-                  </div>
-                )}
-
-                {complaint.citizen_text && (
-                  <div className="mb-4">
-                    <strong className="text-sm">Citizen Description:</strong>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {complaint.citizen_text}
-                    </p>
-                  </div>
-                )}
-
-                {complaint.citizen_image_urls && complaint.citizen_image_urls.length > 0 && (
-                  <div className="mb-4">
-                    <strong className="text-sm flex items-center gap-2 mb-2">
-                      📸 Evidence Images ({complaint.citizen_image_urls.length})
-                    </strong>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {complaint.citizen_image_urls.map((url, idx) => (
-                        <a
-                          key={idx}
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="group relative block overflow-hidden rounded-lg border-2 border-gray-200 hover:border-blue-400 transition-all shadow-sm hover:shadow-md"
-                        >
-                          <img
-                            src={url}
-                            alt={`Evidence ${idx + 1}`}
-                            className="w-full h-28 object-cover group-hover:scale-105 transition-transform duration-200"
-                          />
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                            <span className="opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs font-medium bg-black/60 px-2 py-1 rounded">
-                              Click to view
-                            </span>
-                          </div>
-                          <div className="absolute bottom-1 right-1 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded">
-                            {idx + 1}
-                          </div>
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex gap-2">
-                  {complaint.status === 'pending' && (
-                    <>
-                      <Button
-                        size="sm"
-                        onClick={() => handleStatusChange(complaint.id, 'in_progress')}
-                      >
-                        Start Working
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleStatusChange(complaint.id, 'rejected')}
-                      >
-                        Reject
-                      </Button>
-                    </>
-                  )}
-                  {complaint.status === 'in_progress' && (
-                    <Button
-                      size="sm"
-                      variant="default"
-                      onClick={() => handleStatusChange(complaint.id, 'resolved')}
-                    >
-                      Mark Resolved
-                    </Button>
-                  )}
-                  {complaint.status === 'resolved' && (
-                    <span className="text-green-600 font-semibold">✓ Resolved</span>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+    <div className="min-h-screen bg-gradient-to-b from-emerald-50/80 via-white to-white pb-20">
+      <div className="max-w-[1700px] mx-auto px-6 py-8">
+      {/* Premium Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+        <div>
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-3 mb-2"
+          >
+            <div className="p-2 bg-[#064E3B] rounded-none text-white shadow-lg shadow-emerald-200">
+              <ShieldCheck size={20} />
+            </div>
+            <span className="text-[10px] uppercase tracking-[0.2em] font-black text-[#064E3B]/60">Unified Intelligence Framework</span>
+          </motion.div>
+          <motion.h1 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="text-4xl font-extrabold text-[#064E3B] tracking-tight"
+          >
+            Intelligence <span className="text-emerald-500">Portal</span>
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-slate-500 mt-2 font-medium"
+          >
+            Unified dashboard for civic surveillance and AI-driven governance
+          </motion.p>
         </div>
-      )}
+        
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Input 
+              placeholder="Search intelligence..." 
+              className="pl-10 w-64 bg-white/50 border-slate-200 focus:bg-white transition-all shadow-sm rounded-none"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <Button variant="outline" className="rounded-none border-slate-200 bg-white/50">
+            <Filter className="h-4 w-4 mr-2" />
+            Advanced
+          </Button>
+        </div>
+      </div>
+
+      <Tabs defaultValue="operational" className="space-y-8" onValueChange={setActiveTab}>
+        <div className="flex items-center justify-between">
+          <TabsList className="bg-slate-100/80 p-1 rounded-none">
+            <TabsTrigger value="operational" className="rounded-none px-6 font-bold flex items-center gap-2">
+              <Zap size={14} /> Operational Queue
+            </TabsTrigger>
+            <TabsTrigger value="intelligence" className="rounded-none px-6 font-bold flex items-center gap-2">
+              <TrendingUp size={14} /> Strategic Insights
+            </TabsTrigger>
+          </TabsList>
+          
+          <div className="hidden md:flex items-center gap-6">
+             <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Live System Feed</span>
+             </div>
+             <div className="h-4 w-px bg-slate-200" />
+             <span className="text-[11px] font-medium text-slate-400">
+               Last Synchronized: {mounted ? new Date().toLocaleTimeString() : '--:--:--'}
+             </span>
+          </div>
+        </div>
+
+        <TabsContent value="operational" className="mt-0 space-y-8">
+           <StatsRibbon stats={{
+            total: complaints.length,
+            pending: complaints.filter(c => c.status === 'pending').length,
+            inProgress: complaints.filter(c => c.status === 'in_progress').length,
+            resolved: complaints.filter(c => c.status === 'resolved').length
+          }} />
+
+          {/* Operational Grid */}
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+            {/* Left Main - Queue */}
+            <div className="xl:col-span-8">
+              <div className="bg-white/70 backdrop-blur-md rounded-none border border-slate-200/50 shadow-xl overflow-hidden flex flex-col h-full min-h-[700px]">
+                <div className="p-6 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white/80 z-10 backdrop-blur-md">
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-800">Direct Citizen Ingest</h2>
+                    <p className="text-xs text-slate-400 font-medium">Monitoring {filteredComplaints.length} active threads</p>
+                  </div>
+                  <Tabs defaultValue="all" onValueChange={(v) => setFilter(v as any)}>
+                    <TabsList className="bg-slate-100/50 rounded-none">
+                      <TabsTrigger value="all" className="text-xs font-bold rounded-none">All Ingests</TabsTrigger>
+                      <TabsTrigger value="pending" className="text-xs font-bold rounded-none">Awaiting Action</TabsTrigger>
+                      <TabsTrigger value="resolved" className="text-xs font-bold rounded-none">Closed</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                  {loading ? (
+                    <div className="flex flex-col items-center justify-center py-40">
+                      <div className="w-10 h-10 border-4 border-emerald-100 border-t-[#064E3B] rounded-full animate-spin mb-4" />
+                      <p className="text-sm font-bold text-slate-400 animate-pulse">Synchronizing with Secure Cloud...</p>
+                    </div>
+                  ) : filteredComplaints.length === 0 ? (
+                    <div className="text-center py-40 bg-emerald-50/30 rounded-2xl border-2 border-dashed border-emerald-100">
+                      <Clock size={40} className="mx-auto text-emerald-200 mb-4" />
+                      <p className="text-emerald-600/60 font-bold">No grievances found in current filter</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <AnimatePresence mode="popLayout">
+                        {filteredComplaints.map((complaint) => (
+                          <motion.div
+                            key={complaint.id}
+                            layout
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                          >
+                            <Card className="border-slate-200/60 hover:border-emerald-300 transition-all duration-300 hover:shadow-xl group relative overflow-hidden h-full flex flex-col rounded-none">
+                              {/* Selection overlay indicator */}
+                              <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                              
+                              <CardHeader className="p-5 pb-3">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      {getStatusIcon(complaint.status)}
+                                      <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border ${getPriorityColor(complaint.ai_priority)}`}>
+                                        {complaint.ai_priority}
+                                      </span>
+                                    </div>
+                                    <CardTitle className="text-base font-bold text-slate-800 line-clamp-1 group-hover:text-[#064E3B] transition-colors">
+                                      {complaint.ai_issue_type}
+                                    </CardTitle>
+                                  </div>
+                                  <Badge variant="secondary" className="bg-emerald-50 text-emerald-600/80 border-none text-[9px]">
+                                    {new Date(complaint.created_at).toLocaleDateString()}
+                                  </Badge>
+                                </div>
+                              </CardHeader>
+                              
+                              <CardContent className="p-5 pt-0 flex-1 flex flex-col">
+                                <p className="text-xs text-slate-500 line-clamp-3 mb-6 leading-relaxed flex-1">
+                                  {complaint.ai_summary}
+                                </p>
+                                
+                                <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-50">
+                                  <div className="flex flex-col">
+                                     <span className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">Assigned Dept</span>
+                                     <div className="flex items-center gap-2 text-[11px] font-bold text-[#064E3B]">
+                                      {complaint.ai_department}
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="flex gap-2">
+                                    {complaint.status === 'pending' && (
+                                      <Button 
+                                        size="sm" 
+                                        className="h-8 px-4 text-[11px] font-bold bg-[#064E3B] hover:bg-emerald-800 rounded-none shadow-md shadow-emerald-100 hover:shadow-none transition-all"
+                                        onClick={() => handleStatusChange(complaint.id, 'in_progress')}
+                                      >
+                                        Initiate Response
+                                      </Button>
+                                    )}
+                                    {complaint.status === 'in_progress' && (
+                                      <Button 
+                                        size="sm" 
+                                        variant="outline"
+                                        className="h-8 px-4 text-[11px] font-bold border-emerald-200 text-[#064E3B] hover:bg-emerald-50 rounded-none"
+                                        onClick={() => handleStatusChange(complaint.id, 'resolved')}
+                                      >
+                                        Mark Resolved
+                                      </Button>
+                                    )}
+                                    {complaint.status === 'resolved' && (
+                                      <Badge className="bg-emerald-100 text-emerald-700 border-none font-bold py-1 px-3">
+                                        <CheckCircle size={10} className="mr-1" /> CLOSED
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Side - Social Monitor (Live Channels) */}
+            <div className="xl:col-span-4 space-y-6">
+               <SocialMediaSimulator />
+               
+               <Card className="bg-[#064E3B] text-white border-none shadow-xl relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-4 opacity-10">
+                    <ShieldCheck size={80} />
+                  </div>
+                  <CardHeader>
+                    <CardTitle className="text-lg font-bold">Secure Guard AI</CardTitle>
+                    <CardDescription className="text-emerald-100/80">Automatic fraud & duplicate detection active</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between bg-white/10 p-4 rounded-none backdrop-blur-md">
+                       <div className="flex flex-col">
+                          <span className="text-2xl font-black">99.8%</span>
+                          <span className="text-[10px] uppercase font-bold text-emerald-200">Confidence Score</span>
+                       </div>
+                       <Button variant="outline" size="sm" className="bg-white text-[#064E3B] border-none hover:bg-emerald-50 font-bold">
+                          View Log
+                       </Button>
+                    </div>
+                  </CardContent>
+               </Card>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="intelligence" className="mt-0 space-y-8 pb-10">
+           <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+              <div className="xl:col-span-8 space-y-8">
+                  <MapTilerHeatmap complaints={complaints} />
+                 <AnalyticsCharts complaints={complaints} />
+              </div>
+              <div className="xl:col-span-4 space-y-8">
+                 <PolicyAdvisor />
+                 
+                 <Card className="border-slate-200/60 bg-white/50 backdrop-blur-sm p-6 shadow-sm">
+                    <h3 className="text-sm font-bold text-slate-800 mb-4">Strategic Trend Analysis</h3>
+                    <div className="space-y-4">
+                       {[
+                         { label: 'Infrastructure Issues', trend: '+12%', color: 'text-rose-500' },
+                         { label: 'Public Health Risks', trend: '-3%', color: 'text-emerald-500' },
+                         { label: 'Gov Transparency Score', trend: '+8%', color: 'text-[#064E3B]' }
+                       ].map((item, i) => (
+                         <div key={i} className="flex items-center justify-between p-3 bg-emerald-50/50 rounded-none">
+                            <span className="text-xs font-medium text-slate-600">{item.label}</span>
+                            <span className={`text-xs font-black ${item.color}`}>{item.trend}</span>
+                         </div>
+                       ))}
+                    </div>
+                    <Button variant="ghost" className="w-full mt-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+                       Generate Detailed PDF Report
+                    </Button>
+                 </Card>
+              </div>
+           </div>
+        </TabsContent>
+      </Tabs>
     </div>
+  </div>
   )
 }

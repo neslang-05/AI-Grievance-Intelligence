@@ -1,335 +1,424 @@
 'use client'
 
-import { useState, useRef } from 'react'
-import { Camera, Mic, MapPin, Upload, X } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { motion, AnimatePresence } from 'framer-motion'
+import { MapPin, Edit3, User, Image as ImageIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { submitComplaint } from '@/app/actions/complaint.actions'
-import { motion } from 'framer-motion'
+import { Textarea } from '@/components/ui/textarea'
+import { submitComplaint, updateComplaintSummary } from '@/app/actions/complaint.actions'
+import { createClient } from '@/lib/supabase/client'
+import { toast } from 'sonner'
 
-export default function ComplaintForm() {
+interface ComplaintFormProps {
+  preloadedImages?: string[]
+}
+
+export default function ComplaintForm({ preloadedImages = [] }: ComplaintFormProps) {
+  const router = useRouter()
+  // Voice recording state removed
+  const [images] = useState<string[]>(preloadedImages)
   const [text, setText] = useState('')
-  const [images, setImages] = useState<File[]>([])
-  const [voiceBlob, setVoiceBlob] = useState<Blob | null>(null)
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [manualLocation, setManualLocation] = useState('')
   const [ward, setWard] = useState('')
-  const [isRecording, setIsRecording] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [result, setResult] = useState<any>(null)
+  const [isEditingSummary, setIsEditingSummary] = useState(false)
+  const [editedSummary, setEditedSummary] = useState('')
+  const [user, setUser] = useState<any>(null)
+  const [isAnonymous, setIsAnonymous] = useState(true)
 
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
-  const audioChunksRef = useRef<Blob[]>([])
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  // mediaRecorderRef removed
+  const supabase = createClient()
 
-  // Get GPS location
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user)
+      if (user) setIsAnonymous(false)
+    })
+  }, [])
+
+  // startRecording and stopRecording functions removed
+
+  // 🎯 Convert base64 to Blob for form submission
+  const base64ToBlob = (base64: string): Blob => {
+    const parts = base64.split(';base64,')
+    const contentType = parts[0].split(':')[1]
+    const raw = window.atob(parts[1])
+    const rawLength = raw.length
+    const uInt8Array = new Uint8Array(rawLength)
+    for (let i = 0; i < rawLength; ++i) {
+      uInt8Array[i] = raw.charCodeAt(i)
+    }
+    return new Blob([uInt8Array], { type: contentType })
+  }
+
   const handleGetLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          })
+        (pos) => {
+          setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+          toast.success('Location captured')
         },
-        (error) => {
-          console.error('Error getting location:', error)
-          alert('Unable to get location. Please enter manually.')
+        (err) => {
+          console.error('Geolocation error:', err)
+          toast.error('Could not get location. Please enter manually.')
         }
       )
     }
   }
 
-  // Handle image upload
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newImages = Array.from(e.target.files)
-      setImages([...images, ...newImages])
-    }
-  }
-
-  const removeImage = (index: number) => {
-    setImages(images.filter((_, i) => i !== index))
-  }
-
-  // Voice recording
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const mediaRecorder = new MediaRecorder(stream)
-      mediaRecorderRef.current = mediaRecorder
-      audioChunksRef.current = []
-
-      mediaRecorder.ondataavailable = (event) => {
-        audioChunksRef.current.push(event.data)
-      }
-
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
-        setVoiceBlob(audioBlob)
-        stream.getTracks().forEach((track) => track.stop())
-      }
-
-      mediaRecorder.start()
-      setIsRecording(true)
-    } catch (error) {
-      console.error('Error starting recording:', error)
-      alert('Unable to access microphone')
-    }
-  }
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop()
-      setIsRecording(false)
-    }
-  }
-
-  // Submit complaint
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
-    setResult(null)
 
     try {
       const formData = new FormData()
+      formData.append('text', text)
+      // Voice blob append removed
 
-      if (text) formData.append('text', text)
-      if (voiceBlob) formData.append('voice', voiceBlob, 'recording.webm')
-      images.forEach((image) => formData.append('images', image))
+      // 🎯 Convert base64 images to blobs and append to form
+      images.forEach((img, i) => {
+        const blob = base64ToBlob(img)
+        formData.append(`image-${i}`, blob, `image-${i}.jpg`)
+      })
+
       if (location) {
-        formData.append('locationLat', location.lat.toString())
-        formData.append('locationLng', location.lng.toString())
+        formData.append('location', JSON.stringify(location))
       }
-      if (manualLocation) formData.append('manualLocation', manualLocation)
-      if (ward) formData.append('ward', ward)
+      formData.append('manualLocation', manualLocation)
+      formData.append('ward', ward)
+      formData.append('isAnonymous', String(isAnonymous))
 
-      const response = await submitComplaint(formData)
-      setResult(response)
+      console.log('Submitting complaint...')
+      const res = await submitComplaint(formData)
+      console.log('Submit response:', res)
 
-      if (response.success) {
-        // Reset form
-        setText('')
-        setImages([])
-        setVoiceBlob(null)
-        setManualLocation('')
-        setWard('')
+      if (res.success) {
+        console.log('Setting result state with:', res)
+        setResult(res)
+        setEditedSummary(res.summary || '')
+        // 🎯 Clear sessionStorage after successful submission
+        sessionStorage.removeItem('complaint-images-data')
+        toast.success('Complaint submitted successfully')
+      } else {
+        console.error('Submit failed:', res.message)
+        toast.error(res.message || 'Failed to submit complaint')
       }
-    } catch (error) {
-      console.error('Submit error:', error)
-      setResult({ success: false, message: 'Failed to submit complaint' })
+    } catch (err) {
+      console.error('Submission error:', err)
+      toast.error('An error occurred during submission')
     } finally {
       setIsSubmitting(false)
     }
   }
 
+  const handleUpdateSummary = async () => {
+    if (!result?.complaintId) return
+
+    try {
+      await updateComplaintSummary(result.complaintId, editedSummary)
+      setIsEditingSummary(false)
+      toast.success('Summary updated')
+    } catch (err) {
+      toast.error('Failed to update summary')
+    }
+  }
+
+  console.log('Current result state:', result)
+
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Submit Your Complaint</CardTitle>
-          <CardDescription>
-            Tell us about the civic issue. You can use text, voice, or images - or all three!
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Input Tabs */}
-            <Tabs defaultValue="text" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="text">Text</TabsTrigger>
-                <TabsTrigger value="voice">Voice</TabsTrigger>
-                <TabsTrigger value="images">Images</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="text" className="space-y-4">
-                <div>
-                  <Label htmlFor="text">Describe the issue</Label>
-                  <Textarea
-                    id="text"
-                    placeholder="Describe the civic issue you're facing..."
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    rows={5}
-                    className="mt-2"
-                  />
-                </div>
-              </TabsContent>
-
-              <TabsContent value="voice" className="space-y-4">
-                <div className="flex flex-col items-center gap-4 p-6 border rounded-lg">
-                  {!voiceBlob ? (
-                    <>
-                      <Button
-                        type="button"
-                        variant={isRecording ? 'destructive' : 'default'}
-                        size="lg"
-                        onClick={isRecording ? stopRecording : startRecording}
-                      >
-                        <Mic className="mr-2 h-5 w-5" />
-                        {isRecording ? 'Stop Recording' : 'Start Recording'}
-                      </Button>
-                      {isRecording && (
-                        <motion.div
-                          className="text-red-500 font-medium"
-                          animate={{ opacity: [1, 0.5, 1] }}
-                          transition={{ repeat: Infinity, duration: 1.5 }}
-                        >
-                          Recording...
-                        </motion.div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="flex items-center gap-4">
-                      <div className="text-green-600">✓ Voice recorded</div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setVoiceBlob(null)}
-                      >
-                        <X className="h-4 w-4 mr-1" />
-                        Remove
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="images" className="space-y-4">
-                <div>
-                  <Label>Upload Images</Label>
-                  <div className="mt-2 flex flex-col gap-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <Upload className="mr-2 h-4 w-4" />
-                      Choose Images
-                    </Button>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageUpload}
-                      className="hidden"
+      <AnimatePresence mode="wait">
+        {result ? (
+          <motion.div
+            key="success"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.3 }}
+            className="flex items-center justify-center min-h-[60vh]"
+          >
+            <Card className="border-green-200 bg-white shadow-2xl max-w-2xl w-full">
+              <CardContent className="p-8 md:p-12 text-center">
+                {/* Animated Checkmark */}
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 200,
+                    damping: 15,
+                    delay: 0.1
+                  }}
+                  className="mx-auto mb-6"
+                >
+                  <div className="relative w-24 h-24 mx-auto">
+                    {/* Circle background */}
+                    <motion.div
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.3 }}
+                      className="absolute inset-0 bg-green-100 rounded-full"
                     />
 
-                    {images.length > 0 && (
-                      <div className="grid grid-cols-3 gap-4">
-                        {images.map((image, index) => (
-                          <div key={index} className="relative">
+                    {/* Animated circle border */}
+                    <motion.svg
+                      className="absolute inset-0 w-24 h-24"
+                      viewBox="0 0 100 100"
+                    >
+                      <motion.circle
+                        cx="50"
+                        cy="50"
+                        r="45"
+                        fill="none"
+                        stroke="#10B981"
+                        strokeWidth="4"
+                        initial={{ pathLength: 0 }}
+                        animate={{ pathLength: 1 }}
+                        transition={{ duration: 0.6, ease: "easeInOut" }}
+                      />
+                    </motion.svg>
+
+                    {/* Animated checkmark */}
+                    <motion.svg
+                      className="absolute inset-0 w-24 h-24"
+                      viewBox="0 0 100 100"
+                    >
+                      <motion.path
+                        d="M 25 50 L 40 65 L 75 35"
+                        fill="none"
+                        stroke="#10B981"
+                        strokeWidth="6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        initial={{ pathLength: 0 }}
+                        animate={{ pathLength: 1 }}
+                        transition={{ duration: 0.4, delay: 0.3, ease: "easeOut" }}
+                      />
+                    </motion.svg>
+                  </div>
+                </motion.div>
+
+                {/* Success Message */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+                    Report Submitted!
+                  </h2>
+                  <p className="text-gray-600 mb-6">
+                    Your complaint has been successfully submitted and will be reviewed by our team.
+                  </p>
+                </motion.div>
+
+                {/* Reference ID */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 }}
+                  className="bg-gray-50 rounded-xl p-4 mb-6 border border-gray-200"
+                >
+                  <p className="text-sm text-gray-500 mb-1">Reference ID</p>
+                  <p className="text-xl font-mono font-bold text-[#0F4C81]">
+                    {result.complaintId.slice(0, 16).toUpperCase()}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Save this ID to track your complaint
+                  </p>
+                </motion.div>
+
+                {/* Details Grid */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7 }}
+                  className="grid grid-cols-2 gap-4 mb-8"
+                >
+                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                    <p className="text-xs text-gray-500 mb-1">Department</p>
+                    <p className="font-semibold text-gray-900">{result.department}</p>
+                  </div>
+                  <div className="bg-orange-50 rounded-lg p-4 border border-orange-100">
+                    <p className="text-xs text-gray-500 mb-1">Priority</p>
+                    <p className={`font-semibold capitalize ${result.priority === 'high' ? 'text-red-600' :
+                      result.priority === 'medium' ? 'text-orange-600' :
+                        'text-blue-600'
+                      }`}>
+                      {result.priority}
+                    </p>
+                  </div>
+                </motion.div>
+
+                {/* Action Button */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.8 }}
+                >
+                  <Button
+                    onClick={() => {
+                      sessionStorage.removeItem('complaint-images-data')
+                      router.push('/')
+                    }}
+                    className="w-full md:w-auto px-8 py-6 text-base font-semibold bg-[#0F4C81] hover:bg-[#0B3C5D] shadow-lg"
+                    size="lg"
+                  >
+                    Submit Another Report
+                  </Button>
+
+                  <button
+                    onClick={() => router.push('/status')}
+                    className="mt-3 text-sm text-gray-600 hover:text-[#0F4C81] underline block mx-auto"
+                  >
+                    Track this complaint
+                  </button>
+                </motion.div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="form"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle>Add Details to Your Report</CardTitle>
+                <CardDescription>
+                  Provide additional context to help us process your complaint faster.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {user && (
+                  <div className="mb-6 p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-[#0B3C5D]">
+                      <User className="h-4 w-4" />
+                      <span className="text-sm font-medium">Logged in as {user.email}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="anonymous"
+                        checked={isAnonymous}
+                        onChange={(e) => setIsAnonymous(e.target.checked)}
+                        className="rounded border-gray-300 text-[#0F4C81] focus:ring-[#0F4C81]"
+                      />
+                      <Label htmlFor="anonymous" className="text-xs cursor-pointer">
+                        Submit anonymously
+                      </Label>
+                    </div>
+                  </div>
+                )}
+                <form onSubmit={handleSubmit} className="space-y-6">
+
+                  {/* 🎯 READ-ONLY Image Gallery */}
+                  {images.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <ImageIcon className="h-5 w-5 text-[#0F4C81]" />
+                        <Label className="text-[#0B3C5D] font-bold">Uploaded Images ({images.length})</Label>
+                      </div>
+                      <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+                        {images.map((img, i) => (
+                          <div key={i} className="relative aspect-square">
                             <img
-                              src={URL.createObjectURL(image)}
-                              alt={`Preview ${index + 1}`}
-                              className="w-full h-32 object-cover rounded-lg"
+                              src={img}
+                              alt={`Complaint evidence ${i + 1}`}
+                              className="w-full h-full object-cover rounded-lg border-2 border-blue-100"
                             />
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              size="icon"
-                              className="absolute top-1 right-1 h-6 w-6"
-                              onClick={() => removeImage(index)}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
+                            <div className="absolute bottom-1 right-1 bg-[#0F4C81] text-white text-xs px-1.5 py-0.5 rounded">
+                              {i + 1}
+                            </div>
                           </div>
                         ))}
                       </div>
-                    )}
+                      <p className="text-xs text-gray-500">
+                        These images will be submitted with your complaint.
+                        <button
+                          type="button"
+                          onClick={() => router.push('/')}
+                          className="text-[#0F4C81] hover:underline ml-1"
+                        >
+                          Change images?
+                        </button>
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Text Description */}
+                  <div className="space-y-2">
+                    <Label htmlFor="text" className="text-[#0B3C5D] font-medium">Describe the Issue</Label>
+                    <Textarea
+                      id="text"
+                      placeholder="Provide details about the civic issue you're reporting..."
+                      value={text}
+                      onChange={(e) => setText(e.target.value)}
+                      rows={4}
+                      className="resize-none"
+                    />
                   </div>
-                </div>
-              </TabsContent>
-            </Tabs>
 
-            {/* Location */}
-            <div className="space-y-4 border-t pt-6">
-              <Label>Location (Optional but recommended)</Label>
-              <div className="flex gap-2">
-                <Button type="button" variant="outline" onClick={handleGetLocation}>
-                  <MapPin className="mr-2 h-4 w-4" />
-                  Use GPS
-                </Button>
-                {location && (
-                  <div className="text-sm text-green-600 flex items-center">
-                    ✓ Location captured
+                  {/* Voice Recording Removed */}
+
+                  {/* Location Details */}
+                  <div className="space-y-4 border-t pt-6">
+                    <Label className="text-[#0B3C5D] font-bold">Location Details</Label>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant={location ? "secondary" : "outline"}
+                        onClick={handleGetLocation}
+                      >
+                        <MapPin className={`mr-2 h-4 w-4 ${location ? 'text-green-600' : ''}`} />
+                        {location ? 'Location Captured' : 'Get GPS Location'}
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="manualLocation">Landmark / Area</Label>
+                        <Input
+                          id="manualLocation"
+                          placeholder="e.g., Near City Market"
+                          value={manualLocation}
+                          onChange={(e) => setManualLocation(e.target.value)}
+                          className="bg-white"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="ward">Ward Number / Name</Label>
+                        <Input
+                          id="ward"
+                          placeholder="e.g., Ward 4"
+                          value={ward}
+                          onChange={(e) => setWard(e.target.value)}
+                          className="bg-white"
+                        />
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="manualLocation">Location/Landmark</Label>
-                  <Input
-                    id="manualLocation"
-                    placeholder="e.g., Near City Hospital"
-                    value={manualLocation}
-                    onChange={(e) => setManualLocation(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="ward">Ward (if known)</Label>
-                  <Input
-                    id="ward"
-                    placeholder="e.g., Ward 12"
-                    value={ward}
-                    onChange={(e) => setWard(e.target.value)}
-                  />
-                </div>
-              </div>
-            </div>
 
-            {/* Submit */}
-            <Button
-              type="submit"
-              className="w-full"
-              size="lg"
-              disabled={isSubmitting || (!text && !voiceBlob && images.length === 0)}
-            >
-              {isSubmitting ? (
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
-                >
-                  Processing...
-                </motion.div>
-              ) : (
-                'Submit Complaint'
-              )}
-            </Button>
-          </form>
-
-          {/* Result */}
-          {result && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`mt-6 p-4 rounded-lg ${result.success ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
-                }`}
-            >
-              {result.success ? (
-                <div className="space-y-2">
-                  <h3 className="font-semibold">Complaint Submitted Successfully!</h3>
-                  <p className="text-sm">ID: {result.complaintId}</p>
-                  <p className="text-sm">Department: {result.department}</p>
-                  <p className="text-sm">Priority: {result.priority}</p>
-                  <p className="mt-2">{result.summary}</p>
-                </div>
-              ) : (
-                <div>
-                  <h3 className="font-semibold">Submission Failed</h3>
-                  <p className="text-sm mt-1">{result.message}</p>
-                </div>
-              )}
-            </motion.div>
-          )}
-        </CardContent>
-      </Card>
+                  <Button
+                    type="submit"
+                    className="w-full h-14 text-lg bg-[#0F4C81] hover:bg-[#0B3C5D]"
+                    disabled={isSubmitting || (images.length === 0 && !text && !voiceBlob)}
+                  >
+                    {isSubmitting ? 'Processing Grievance...' : 'Submit Official Report'}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

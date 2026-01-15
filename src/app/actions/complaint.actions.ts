@@ -1,6 +1,7 @@
 'use server'
 
-import { getServiceSupabase } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/server'
+import { requireOfficer } from '@/lib/supabase/auth-helpers'
 import { analyzeImage } from '@/lib/azure/openai'
 import { transcribeAudio } from '@/lib/azure/speech'
 import { processComplaint } from '@/lib/ai/orchestrator'
@@ -10,7 +11,7 @@ import { NormalizedInput } from '@/types/complaint.types'
  * Upload media files to Supabase storage
  */
 async function uploadMedia(file: Buffer, fileName: string, bucket: string): Promise<string> {
-  const supabase = getServiceSupabase()
+  const supabase = await createClient()
 
   const { data, error } = await supabase.storage
     .from(bucket)
@@ -131,7 +132,8 @@ export async function submitComplaint(formData: FormData) {
     }
 
     // Step 5: Save to database
-    const supabase = getServiceSupabase()
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
     const complaintData = {
       citizen_text: formData.get('text') as string | null,
@@ -149,6 +151,8 @@ export async function submitComplaint(formData: FormData) {
       ai_confidence: aiResult.classification!.confidence,
       status: 'pending',
       is_valid: true,
+      user_id: user?.id || null,
+      is_anonymous: !user || formData.get('isAnonymous') === 'true',
     }
 
     const { data, error } = await supabase
@@ -182,7 +186,7 @@ export async function submitComplaint(formData: FormData) {
  */
 export async function updateComplaintSummary(complaintId: string, newSummary: string) {
   try {
-    const supabase = getServiceSupabase()
+    const supabase = await createClient()
 
     const { error } = await supabase
       .from('complaints')
@@ -212,7 +216,8 @@ export async function getComplaints(filters?: {
   priority?: string
 }) {
   try {
-    const supabase = getServiceSupabase()
+    await requireOfficer()
+    const supabase = await createClient()
 
     let query = supabase.from('complaints').select('*').order('created_at', { ascending: false })
 
@@ -252,7 +257,8 @@ export async function updateComplaintStatus(
   rejectionReason?: string
 ) {
   try {
-    const supabase = getServiceSupabase()
+    await requireOfficer()
+    const supabase = await createClient()
 
     const updateData: any = { status }
     if (rejectionReason) {

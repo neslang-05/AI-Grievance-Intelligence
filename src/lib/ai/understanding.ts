@@ -11,11 +11,10 @@ export async function understandComplaint(input: NormalizedInput): Promise<AIUnd
 Text: ${input.textContent || 'None'}
 Image Descriptions: ${input.imageDescriptions.join(', ') || 'None'}
 Voice Transcript: ${input.voiceTranscript || 'None'}
-Location: ${
-    input.manualLocation || input.location
+Location: ${input.manualLocation || input.location
       ? `${input.location?.lat}, ${input.location?.lng}`
       : 'Not provided'
-  }
+    }
 Ward: ${input.ward || 'Not provided'}
 `.trim()
 
@@ -26,11 +25,22 @@ Ward: ${input.ward || 'Not provided'}
   "language": "english" | "hindi" | "mixed"
 }`
 
-  const result = await generateStructuredCompletion<AIUnderstandingResult>(
-    UNDERSTANDING_SYSTEM_PROMPT,
-    `Extract the issue from this complaint:\n\n${context}\n\nProvide a clear extracted issue, context, citizen's intent, and detected language.`,
-    schema
-  )
+  try {
+    const result = await generateStructuredCompletion<AIUnderstandingResult>(
+      UNDERSTANDING_SYSTEM_PROMPT,
+      `Extract the issue from this complaint:\n\n${context}\n\nProvide a clear extracted issue, context, citizen's intent, and detected language.`,
+      schema
+    )
 
-  return result
+    return result
+  } catch (error) {
+    console.error('Understanding error:', error)
+    // Fallback if AI fails
+    return {
+      extractedIssue: input.textContent || 'Issue details not provided',
+      context: 'AI processing failed, using raw input',
+      intent: 'complaint',
+      language: 'english'
+    }
+  }
 }

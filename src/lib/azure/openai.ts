@@ -59,16 +59,29 @@ export async function generateStructuredCompletion<T>(
     const response = await azureOpenAIClient.getChatCompletions(
       deploymentName,
       [
-        { role: 'system', content: systemPrompt + '\n\nYou must respond with valid JSON only.' },
+        { role: 'system', content: systemPrompt + '\n\nYou must respond with valid JSON only, without any markdown formatting or code blocks.' },
         { role: 'user', content: fullPrompt },
       ],
       { temperature: 0.2, maxTokens: 1500 }
     )
 
-    const content = response.choices[0]?.message?.content || '{}'
-    return JSON.parse(content) as T
+    let content = response.choices[0]?.message?.content || '{}'
+
+    // 🐛 Strip markdown code blocks if present
+    content = content.trim()
+    if (content.startsWith('```json')) {
+      content = content.replace(/^```json\s*\n?/, '').replace(/\n?```\s*$/, '')
+    } else if (content.startsWith('```')) {
+      content = content.replace(/^```\s*\n?/, '').replace(/\n?```\s*$/, '')
+    }
+
+    // 🐛 Fix common JSON errors from AI (like using undefined instead of null)
+    content = content.replace(/:\s*undefined/g, ': null')
+
+    return JSON.parse(content.trim()) as T
   } catch (error) {
     console.error('Error generating structured completion:', error)
-    throw new Error('Failed to generate structured AI response')
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    throw new Error(`Failed to generate structured AI response: ${errorMessage}`)
   }
 }

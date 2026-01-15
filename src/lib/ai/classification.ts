@@ -32,15 +32,26 @@ Location: ${input.manualLocation || 'GPS coordinates'}
   const schema = `{
   "department": string,
   "issueType": string,
-  "subCategory": string | undefined,
+  "subCategory": string | null,
   "confidence": number
 }`
 
-  const result = await generateStructuredCompletion<AIClassificationResult>(
-    CLASSIFICATION_SYSTEM_PROMPT,
-    `Classify this complaint to the correct department:\n\n${context}\n\nProvide department, issue type, optional sub-category, and confidence (0-1).`,
-    schema
-  )
+  try {
+    const result = await generateStructuredCompletion<AIClassificationResult>(
+      CLASSIFICATION_SYSTEM_PROMPT,
+      `Classify this complaint to the correct department:\n\n${context}\n\nProvide department, issue type, optional sub-category, and confidence (0-1).`,
+      schema
+    )
 
-  return result
+    return result
+  } catch (error) {
+    console.error('Classification error:', error)
+    // Fallback classification
+    return {
+      department: 'District Administration', // Default for triage
+      issueType: 'General Grievance',
+      subCategory: 'Unclassified',
+      confidence: 0
+    }
+  }
 }

@@ -1,0 +1,20 @@
+{
+  "recommendations": [
+    {
+      "extensionId": "bradlc.vscode-tailwindcss",
+      "reason": "Tailwind CSS IntelliSense for better styling experience"
+    },
+    {
+      "extensionId": "dbaeumer.vscode-eslint",
+      "reason": "ESLint for code quality"
+    },
+    {
+      "extensionId": "esbenp.prettier-vscode",
+      "reason": "Code formatting"
+    },
+    {
+      "extensionId": "ms-vscode.vscode-typescript-next",
+      "reason": "Enhanced TypeScript support"
+    }
+  ]
+}

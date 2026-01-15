@@ -1,0 +1,74 @@
+import { OpenAIClient, AzureKeyCredential } from '@azure/openai'
+
+const endpoint = process.env.AZURE_OPENAI_ENDPOINT!
+const apiKey = process.env.AZURE_OPENAI_API_KEY!
+const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT_NAME!
+
+export const azureOpenAIClient = new OpenAIClient(endpoint, new AzureKeyCredential(apiKey))
+
+export async function analyzeImage(imageBase64: string, prompt: string): Promise<string> {
+  try {
+    const response = await azureOpenAIClient.getChatCompletions(
+      deploymentName,
+      [
+        {
+          role: 'user',
+          content: `${prompt}\n\nImage: data:image/jpeg;base64,${imageBase64.substring(0, 100)}...`,
+        },
+      ],
+      { maxTokens: 500 }
+    )
+
+    return response.choices[0]?.message?.content || ''
+  } catch (error) {
+    console.error('Error analyzing image:', error)
+    throw new Error('Failed to analyze image')
+  }
+}
+
+export async function generateCompletion(
+  systemPrompt: string,
+  userPrompt: string,
+  temperature: number = 0.3
+): Promise<string> {
+  try {
+    const response = await azureOpenAIClient.getChatCompletions(
+      deploymentName,
+      [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      { temperature, maxTokens: 1000 }
+    )
+
+    return response.choices[0]?.message?.content || ''
+  } catch (error) {
+    console.error('Error generating completion:', error)
+    throw new Error('Failed to generate AI completion')
+  }
+}
+
+export async function generateStructuredCompletion<T>(
+  systemPrompt: string,
+  userPrompt: string,
+  schema: string
+): Promise<T> {
+  const fullPrompt = `${userPrompt}\n\nRespond with valid JSON matching this schema:\n${schema}`
+
+  try {
+    const response = await azureOpenAIClient.getChatCompletions(
+      deploymentName,
+      [
+        { role: 'system', content: systemPrompt + '\n\nYou must respond with valid JSON only.' },
+        { role: 'user', content: fullPrompt },
+      ],
+      { temperature: 0.2, maxTokens: 1500 }
+    )
+
+    const content = response.choices[0]?.message?.content || '{}'
+    return JSON.parse(content) as T
+  } catch (error) {
+    console.error('Error generating structured completion:', error)
+    throw new Error('Failed to generate structured AI response')
+  }
+}

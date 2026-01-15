@@ -22,7 +22,7 @@ import {
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { StatsRibbon } from './StatsRibbon'
-import { SpatialHeatmap } from './SpatialHeatmap'
+import { MapTilerHeatmap } from './spatial/MapTilerHeatmap'
 import { AnalyticsCharts } from './AnalyticsCharts'
 import { SocialMediaSimulator } from './analytics/SocialMediaSimulator'
 import { PolicyAdvisor } from './analytics/PolicyAdvisor'
@@ -318,7 +318,7 @@ export default function OfficerDashboard() {
         <TabsContent value="intelligence" className="mt-0 space-y-8 pb-10">
            <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
               <div className="xl:col-span-8 space-y-8">
-                 <SpatialHeatmap complaints={complaints} />
+                  <MapTilerHeatmap complaints={complaints} />
                  <AnalyticsCharts complaints={complaints} />
               </div>
               <div className="xl:col-span-4 space-y-8">

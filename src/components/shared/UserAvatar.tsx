@@ -14,8 +14,8 @@ export default function UserAvatar({ user, profile }: UserAvatarProps) {
     const avatarUrl = profile?.avatar_url
 
     return (
-        <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md border border-white/20 p-1.5 pr-4 rounded-full transition-all hover:bg-white/20">
-            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white/30 flex items-center justify-center bg-white shadow-sm">
+        <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md border border-white/20 p-1.5 pr-4 rounded-none transition-all hover:bg-white/20">
+            <div className="w-10 h-10 rounded-none overflow-hidden border-2 border-white/30 flex items-center justify-center bg-white shadow-sm">
                 {avatarUrl ? (
                     <img
                         src={avatarUrl}

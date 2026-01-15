@@ -68,6 +68,7 @@ export default function EditableComplaintForm({
   // Auto-save timer
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   // Mark field as edited
   const markFieldEdited = useCallback((fieldName: string) => {
@@ -76,6 +77,7 @@ export default function EditableComplaintForm({
 
   // Auto-save functionality
   useEffect(() => {
+    setMounted(true)
     const timer = setTimeout(() => {
       saveData()
     }, 30000) // Auto-save every 30 seconds
@@ -141,7 +143,7 @@ export default function EditableComplaintForm({
             <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
             Saving...
           </span>
-        ) : lastSaved ? (
+        ) : lastSaved && mounted ? (
           <span>Last saved: {lastSaved.toLocaleTimeString()}</span>
         ) : null}
       </div>

@@ -179,7 +179,7 @@ export function MapTilerHeatmap({ complaints }: MapTilerHeatmapProps) {
                             <div style="display: flex; gap: 4px;">
                                 <span style="background: ${props.ai_priority === 'high' ? '#fee2e2' : props.ai_priority === 'medium' ? '#fef3c7' : '#dbeafe'}; 
                                              color: ${props.ai_priority === 'high' ? '#991b1b' : props.ai_priority === 'medium' ? '#92400e' : '#1e40af'}; 
-                                             font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px;">
+                                             font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 0;">
                                     ${props.ai_priority.toUpperCase()}
                                 </span>
                             </div>
@@ -228,7 +228,7 @@ export function MapTilerHeatmap({ complaints }: MapTilerHeatmapProps) {
     }
 
     return (
-        <Box sx={{ position: 'relative', width: '100%', height: '500px', borderRadius: '16px', overflow: 'hidden', boxShadow: 3 }}>
+        <Box sx={{ position: 'relative', width: '100%', height: '500px', borderRadius: '0', overflow: 'hidden', boxShadow: 3 }}>
             <div ref={mapContainer} style={{ width: '100%', height: '100%' }} />
 
             {/* MUI Sidebar */}
@@ -251,7 +251,7 @@ export function MapTilerHeatmap({ complaints }: MapTilerHeatmapProps) {
 
                 {selectedComplaint && (
                     <Stack spacing={3}>
-                        <Paper variant="outlined" sx={{ p: 2, borderRadius: '12px', border: '1px solid #f1f5f9', background: '#f8fafc' }}>
+                        <Paper variant="outlined" sx={{ p: 2, borderRadius: '0', border: '1px solid #f1f5f9', background: '#f8fafc' }}>
                             <Typography variant="caption" color="text.secondary" fontWeight="bold" sx={{ mb: 1, display: 'block' }}>
                                 AI SUMMARY
                             </Typography>
@@ -284,13 +284,13 @@ export function MapTilerHeatmap({ complaints }: MapTilerHeatmapProps) {
                                 label={selectedComplaint.status.toUpperCase()} 
                                 variant="outlined"
                                 size="small"
-                                sx={{ fontWeight: 'bold', fontSize: '10px' }}
+                                sx={{ fontWeight: 'bold', fontSize: '10px', borderRadius: 0 }}
                             />
                             <Chip 
                                 label={selectedComplaint.ai_priority.toUpperCase()} 
                                 color={selectedComplaint.ai_priority === 'high' ? 'error' : selectedComplaint.ai_priority === 'medium' ? 'warning' : 'primary'}
                                 size="small"
-                                sx={{ fontWeight: 'bold', fontSize: '10px' }}
+                                sx={{ fontWeight: 'bold', fontSize: '10px', borderRadius: 0 }}
                             />
                         </Stack>
 
@@ -307,7 +307,7 @@ export function MapTilerHeatmap({ complaints }: MapTilerHeatmapProps) {
                                             key={i} 
                                             component="img" 
                                             src={url} 
-                                            sx={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: '8px' }} 
+                                            sx={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: '0' }} 
                                         />
                                     ))}
                                 </Box>

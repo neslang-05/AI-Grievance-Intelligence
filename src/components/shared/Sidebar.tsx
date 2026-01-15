@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useState } from 'react'
 import { 
     LayoutDashboard, 
     PlusCircle, 
@@ -11,7 +12,13 @@ import {
     ChevronLeft, 
     ChevronRight,
     Headset,
-    Home
+    Home,
+    ShieldCheck,
+    BarChart3,
+    MapPin,
+    MessageSquare,
+    Scale,
+    ChevronDown
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -24,6 +31,7 @@ interface SidebarProps {
 
 export default function Sidebar({ user, profile, isCollapsed, onToggle }: SidebarProps) {
     const pathname = usePathname()
+    const [isIntelligenceOpen, setIsIntelligenceOpen] = useState(true)
 
     const navItems = [
         {
@@ -39,6 +47,25 @@ export default function Sidebar({ user, profile, isCollapsed, onToggle }: Sideba
             roles: ['CITIZEN', 'OFFICER', 'ADMIN']
         },
         {
+            label: 'Operations',
+            icon: LayoutDashboard,
+            href: '/dashboard',
+            roles: ['OFFICER', 'ADMIN']
+        },
+        {
+            label: 'Intelligence Portal',
+            icon: ShieldCheck,
+            href: '/dashboard/intelligence',
+            roles: ['OFFICER', 'ADMIN'],
+            isParent: true,
+            children: [
+                { label: 'Strategic Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+                { label: 'Spatial Surveillance', href: '/dashboard/spatial', icon: MapPin },
+                { label: 'Social Listening', href: '/dashboard/social', icon: MessageSquare },
+                { label: 'Policy Intelligence', href: '/dashboard/policy', icon: Scale },
+            ]
+        },
+        {
             label: 'Check Status',
             icon: Search,
             href: '/status',
@@ -49,18 +76,6 @@ export default function Sidebar({ user, profile, isCollapsed, onToggle }: Sideba
             icon: Headset,
             href: '/my-complaints',
             roles: ['CITIZEN', 'OFFICER', 'ADMIN']
-        },
-        {
-            label: 'Dashboard',
-            icon: LayoutDashboard,
-            href: '/dashboard',
-            roles: ['OFFICER', 'ADMIN']
-        },
-        {
-            label: 'Profile Settings',
-            icon: UserCircle,
-            href: '/profile',
-            roles: ['OFFICER', 'ADMIN']
         }
     ]
 
@@ -79,58 +94,100 @@ export default function Sidebar({ user, profile, isCollapsed, onToggle }: Sideba
             )}
         >
             {/* Logo Section */}
-            <div className="p-6 flex items-center justify-between">
+            <div className="p-6 flex items-center justify-between border-b border-gray-100">
                 {!isCollapsed && (
                     <Link href="/" className="flex items-center gap-3 animate-in fade-in duration-500">
-                        <img src="/favicon.svg" alt="UnityDesk" className="w-12 h-12 object-contain transform transition hover:scale-105" />
-                        <span className="font-bold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-[#0B3C5D] to-[#0F4C81]">
+                        <img src="/favicon.svg" alt="UnityDesk" className="w-10 h-10 object-contain transform transition hover:scale-105" />
+                        <span className="font-bold text-lg tracking-tight text-[#0B3C5D]">
                             UnityDesk
                         </span>
                     </Link>
                 )}
                 {isCollapsed && (
                     <div className="mx-auto">
-                        <img src="/favicon.svg" alt="UnityDesk" className="w-10 h-10 object-contain" />
+                        <img src="/favicon.svg" alt="UnityDesk" className="w-8 h-8 object-contain" />
                     </div>
                 )}
+                <button 
+                    onClick={onToggle}
+                    className="p-1.5 hover:bg-gray-100 rounded-none transition-colors text-gray-400"
+                >
+                    {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+                </button>
             </div>
 
-            {/* Collapse Toggle */}
-            <button 
-                onClick={onToggle}
-                className="absolute -right-3 top-20 bg-white border rounded-full p-1 shadow-md hover:bg-gray-50 transition-colors z-50 mt-4"
-            >
-                {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-            </button>
-
             {/* Navigation Items */}
-            <nav className="flex-1 px-3 py-4 space-y-2 overflow-y-auto mt-8">
+            <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
                 {filteredItems.map((item) => {
-                    const isActive = pathname === item.href
+                    const isActive = pathname === item.href || (item.children?.some(child => pathname === child.href))
+                    const isIntelligence = item.label === 'Intelligence Portal'
+                    
                     return (
-                        <Link 
-                            key={item.href}
-                            href={item.href}
-                            className={cn(
-                                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative",
-                                isActive 
-                                    ? "bg-[#0F4C81] text-white shadow-lg shadow-[#0F4C81]/20" 
-                                    : "text-gray-600 hover:bg-gray-100/80 hover:text-[#0F4C81]"
+                        <div key={item.label} className="space-y-1">
+                            {item.isParent ? (
+                                <>
+                                    <button
+                                        onClick={() => !isCollapsed && setIsIntelligenceOpen(!isIntelligenceOpen)}
+                                        className={cn(
+                                            "w-full flex items-center justify-between px-3 py-2.5 rounded-none transition-all duration-200 group",
+                                            isActive && !isIntelligenceOpen ? "bg-indigo-50 text-indigo-700 font-bold" : "text-gray-500 hover:bg-gray-50"
+                                        )}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <item.icon size={20} className={cn(isActive ? "text-indigo-600" : "text-gray-400")} />
+                                            {!isCollapsed && <span className="text-sm font-semibold">{item.label}</span>}
+                                        </div>
+                                        {!isCollapsed && (
+                                            <ChevronDown 
+                                                size={14} 
+                                                className={cn("transition-transform duration-200", isIntelligenceOpen ? "rotate-0" : "-rotate-90")} 
+                                            />
+                                        )}
+                                    </button>
+                                    
+                                    {!isCollapsed && isIntelligenceOpen && (
+                                        <div className="ml-4 pl-4 border-l border-gray-100 space-y-1 mt-1">
+                                            {item.children?.map(child => {
+                                                const isChildActive = pathname === child.href
+                                                return (
+                                                    <Link
+                                                        key={child.href}
+                                                        href={child.href}
+                                                        className={cn(
+                                                            "flex items-center gap-3 px-3 py-2 rounded-none text-xs font-bold transition-all",
+                                                            isChildActive ? "text-indigo-600 bg-indigo-50/50" : "text-gray-400 hover:text-indigo-600 hover:bg-gray-50/50"
+                                                        )}
+                                                    >
+                                                        <child.icon size={14} />
+                                                        {child.label}
+                                                    </Link>
+                                                )
+                                            })}
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <Link 
+                                    href={item.href}
+                                    className={cn(
+                                        "flex items-center gap-3 px-3 py-2.5 rounded-none transition-all duration-200 group relative",
+                                        isActive 
+                                            ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200" 
+                                            : "text-gray-500 hover:bg-gray-50 hover:text-indigo-600"
+                                    )}
+                                >
+                                    <item.icon size={20} className={cn(
+                                        "transition-transform group-hover:scale-110",
+                                        isActive ? "text-white" : "text-gray-400 group-hover:text-indigo-600"
+                                    )} />
+                                    {!isCollapsed && (
+                                        <span className="font-semibold text-sm whitespace-nowrap">
+                                            {item.label}
+                                        </span>
+                                    )}
+                                </Link>
                             )}
-                        >
-                            <item.icon size={22} className={cn(
-                                "transition-transform group-hover:scale-110",
-                                isActive ? "text-white" : "text-gray-400 group-hover:text-[#0F4C81]"
-                            )} />
-                            {!isCollapsed && (
-                                <span className="font-medium text-sm whitespace-nowrap">
-                                    {item.label}
-                                </span>
-                            )}
-                            {isActive && !isCollapsed && (
-                                <div className="absolute right-3 w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                            )}
-                        </Link>
+                        </div>
                     )
                 })}
             </nav>
@@ -142,7 +199,7 @@ export default function Sidebar({ user, profile, isCollapsed, onToggle }: Sideba
                         <button 
                             type="submit"
                             className={cn(
-                                "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-red-500 hover:bg-red-50 group",
+                                "w-full flex items-center gap-3 px-4 py-3 rounded-none transition-all duration-200 text-red-500 hover:bg-red-50 group",
                                 isCollapsed && "justify-center"
                             )}
                         >
@@ -156,7 +213,7 @@ export default function Sidebar({ user, profile, isCollapsed, onToggle }: Sideba
                     <Link 
                         href="/login"
                         className={cn(
-                            "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-[#0F4C81] hover:bg-[#0F4C81]/5",
+                            "w-full flex items-center gap-3 px-4 py-3 rounded-none transition-all duration-200 text-[#0F4C81] hover:bg-[#0F4C81]/5",
                             isCollapsed && "justify-center"
                         )}
                     >

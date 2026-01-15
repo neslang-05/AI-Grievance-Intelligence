@@ -36,10 +36,10 @@ export function AnalyticsCharts({ complaints }: AnalyticsChartsProps) {
   const priorityData = [
     { name: 'High', value: complaints.filter(c => c.ai_priority === 'high').length, color: '#ef4444' },
     { name: 'Medium', value: complaints.filter(c => c.ai_priority === 'medium').length, color: '#f59e0b' },
-    { name: 'Low', value: complaints.filter(c => c.ai_priority === 'low').length, color: '#3b82f6' }
+    { name: 'Low', value: complaints.filter(c => c.ai_priority === 'low').length, color: '#10b981' }
   ]
 
-  const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f97316']
+  const COLORS = ['#064E3B', '#059669', '#10B981', '#34D399', '#0D9488']
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -64,7 +64,7 @@ export function AnalyticsCharts({ complaints }: AnalyticsChartsProps) {
               <Tooltip 
                 contentStyle={{ 
                   backgroundColor: 'rgba(255, 255, 255, 0.9)', 
-                  borderRadius: '8px', 
+                  borderRadius: '0px', 
                   border: 'none',
                   boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' 
                 }}
@@ -97,12 +97,12 @@ export function AnalyticsCharts({ complaints }: AnalyticsChartsProps) {
                 cursor={{ fill: 'transparent' }}
                 contentStyle={{ 
                   backgroundColor: 'rgba(255, 255, 255, 0.9)', 
-                  borderRadius: '8px', 
+                  borderRadius: '0px', 
                   border: 'none',
                   boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' 
                 }}
               />
-              <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+              <Bar dataKey="value" radius={[0, 0, 0, 0]}>
                 {priorityData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}

@@ -66,7 +66,7 @@ export default function AppShell({ user, profile, children }: AppShellProps) {
                     <div className="flex items-center gap-4">
                         {!showSidebar && (
                             <Link href="/new-submit" className="hidden sm:flex">
-                                <Button size="sm" className="bg-[#0B3C5D] hover:bg-[#0F4C81] text-white rounded-full px-5 font-semibold">
+                                <Button size="sm" className="bg-[#0B3C5D] hover:bg-[#0F4C81] text-white rounded-none px-5 font-semibold">
                                     Report Issue
                                 </Button>
                             </Link>

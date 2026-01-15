@@ -43,7 +43,7 @@ export function AnalyticsDashboard({ data }: AnalyticsDashboardProps) {
         <Card className="h-[400px] border-slate-200/60 bg-white/50 backdrop-blur-sm shadow-sm hover:shadow-md transition-all">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg font-bold flex items-center gap-2">
-              <span className="w-2 h-6 bg-indigo-500 rounded-full" />
+              <span className="w-2 h-6 bg-indigo-500 rounded-none" />
               Department Breakdown
             </CardTitle>
             <CardDescription>Distribution of grievances across city departments</CardDescription>
@@ -65,7 +65,7 @@ export function AnalyticsDashboard({ data }: AnalyticsDashboardProps) {
                   ))}
                 </Pie>
                 <Tooltip 
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                  contentStyle={{ borderRadius: '0', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                 />
                 <Legend layout="vertical" align="right" verticalAlign="middle" />
               </PieChart>
@@ -83,7 +83,7 @@ export function AnalyticsDashboard({ data }: AnalyticsDashboardProps) {
         <Card className="h-[400px] border-slate-200/60 bg-white/50 backdrop-blur-sm shadow-sm hover:shadow-md transition-all">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg font-bold flex items-center gap-2">
-              <span className="w-2 h-6 bg-red-500 rounded-full" />
+              <span className="w-2 h-6 bg-red-500 rounded-none" />
               Priority Intelligence
             </CardTitle>
             <CardDescription>Grievance volume by AI-assigned priority levels</CardDescription>
@@ -104,12 +104,16 @@ export function AnalyticsDashboard({ data }: AnalyticsDashboardProps) {
                   tick={{ fill: '#64748b', fontSize: 12 }}
                 />
                 <Tooltip 
-                  cursor={{ fill: '#f8fafc' }}
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                />
+                contentStyle={{ 
+                  backgroundColor: 'rgba(255, 255, 255, 0.9)', 
+                  borderRadius: '0px', 
+                  border: 'none',
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' 
+                }}
+              />
                 <Bar 
                   dataKey="value" 
-                  radius={[6, 6, 0, 0]}
+                  radius={[0, 0, 0, 0]}
                   barSize={40}
                 >
                   {data.byPriority.map((entry, index) => (

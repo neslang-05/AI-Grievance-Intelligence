@@ -85,13 +85,13 @@ export function StatsRibbon({ stats }: StatsRibbonProps) {
                   {item.value}
                 </h3>
               </div>
-              <div className={`p-2.5 rounded-xl ${item.bg} ${item.color} group-hover:scale-110 transition-transform duration-300 shadow-sm`}>
+              <div className={`p-2.5 rounded-none ${item.bg} ${item.color} group-hover:scale-110 transition-transform duration-300 shadow-sm`}>
                 <item.icon size={20} strokeWidth={2.5} />
               </div>
             </div>
             {/* Minimal trend indicator */}
             <div className="mt-3 flex items-center gap-1.5">
-              <div className="h-1 flex-1 bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-1 flex-1 bg-slate-100 rounded-none overflow-hidden">
                 <motion.div 
                   initial={{ width: 0 }}
                   animate={{ width: `${Math.min((item.value / (stats.total || 1)) * 100, 100)}%` }}

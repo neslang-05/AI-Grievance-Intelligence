@@ -17,14 +17,20 @@ export default function VoiceRecorder({
   onRecordingStateChange,
 }: VoiceRecorderProps) {
   const [isRecording, setIsRecording] = useState(false)
-  const [transcript, setTranscript] = useState('')
+  const [finalTranscript, setFinalTranscript] = useState('')
+  const [interimTranscript, setInterimTranscript] = useState('')
+  const [finalTranslation, setFinalTranslation] = useState('')
+  const [interimTranslation, setInterimTranslation] = useState('')
+  const [displayLang, setDisplayLang] = useState('')
   const [isSynthesizing, setIsSynthesizing] = useState(false)
   const [volumeLevel, setVolumeLevel] = useState(0)
-  
-  const recognizerRef = useRef<sdk.SpeechRecognizer | null>(null)
+
+  const recognizerRef = useRef<any>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const animationFrameRef = useRef<number | null>(null)
+
+  const fullTranscript = `${finalTranscript}${finalTranscript && interimTranscript ? ' ' : ''}${interimTranscript}`
 
   // Start Voice Recognition
   const startRecording = async () => {
@@ -35,24 +41,59 @@ export default function VoiceRecorder({
 
       if (!token) throw new Error('Could not get speech token')
 
-      const speechConfig = sdk.SpeechConfig.fromAuthorizationToken(token, region)
+      // Use translation recognizer to provide live translated text
+      const speechConfig = sdk.SpeechTranslationConfig.fromAuthorizationToken(token, region)
+      // Prefer user's browser language as target translation language
+      const userLang = (navigator.language || 'en').split('-')[0]
+      setDisplayLang(userLang)
+      // Source speech language (adjust as needed)
       speechConfig.speechRecognitionLanguage = 'en-IN'
-
-      const audioConfig = sdk.AudioConfig.fromDefaultMicrophoneInput()
-      const recognizer = new sdk.SpeechRecognizer(speechConfig, audioConfig)
-
-      recognizer.recognizing = (_s, e) => {
-        setTranscript(prev => prev + ' ' + e.result.text)
+      // Add target language (user's UI locale)
+      try {
+        // addTargetLanguage may not exist on older typings, but SDK exposes it at runtime
+        // @ts-ignore
+        speechConfig.addTargetLanguage(userLang)
+      } catch (err) {
+        // fallback: nothing
       }
 
-      recognizer.recognized = (_s, e) => {
-        if (e.result.reason === sdk.ResultReason.RecognizedSpeech) {
-          setTranscript(e.result.text)
+      const audioConfig = sdk.AudioConfig.fromDefaultMicrophoneInput()
+      const recognizer: any = new sdk.TranslationRecognizer(speechConfig, audioConfig)
+
+      const getTranslationText = (translations: any, lang: string) => {
+        if (!translations) return ''
+        if (typeof translations.get === 'function') return translations.get(lang) || ''
+        return translations[lang] || ''
+      }
+
+      recognizer.recognizing = (_s: any, e: any) => {
+        setInterimTranscript(e.result.text)
+        const t = getTranslationText(e.result.translations, userLang)
+        setInterimTranslation(t)
+      }
+
+      recognizer.recognized = (_s: any, e: any) => {
+        // Update final transcript
+        if (e.result && e.result.text) {
+          setFinalTranscript(prev => {
+            const newText = prev ? `${prev}. ${e.result.text}` : e.result.text
+            return newText
+          })
         }
+        // Update final translation if available
+        const t = getTranslationText(e.result?.translations, userLang)
+        if (t) {
+          setFinalTranslation(prev => {
+            const newT = prev ? `${prev}. ${t}` : t
+            return newT
+          })
+        }
+        setInterimTranscript('')
+        setInterimTranslation('')
       }
 
       recognizerRef.current = recognizer
-      
+
       recognizer.startContinuousRecognitionAsync(
         () => {
           setIsRecording(true)
@@ -77,7 +118,7 @@ export default function VoiceRecorder({
         () => {
           setIsRecording(false)
           onRecordingStateChange?.(false)
-          onTranscriptionComplete(transcript)
+          onTranscriptionComplete(fullTranscript)
           stopVolumeAnalysis()
           recognizerRef.current?.close()
           recognizerRef.current = null
@@ -88,7 +129,7 @@ export default function VoiceRecorder({
         }
       )
     }
-  }, [transcript, onRecordingStateChange, onTranscriptionComplete])
+  }, [fullTranscript, onRecordingStateChange, onTranscriptionComplete])
 
   // Volume analysis for visual feedback
   const startVolumeAnalysis = async () => {
@@ -99,7 +140,7 @@ export default function VoiceRecorder({
       const analyser = audioContext.createAnalyser()
       analyser.fftSize = 256
       source.connect(analyser)
-      
+
       audioContextRef.current = audioContext
       analyserRef.current = analyser
 
@@ -133,10 +174,10 @@ export default function VoiceRecorder({
     try {
       const tokenRes = await fetch('/api/speech/token')
       const { token, region } = await tokenRes.json()
-      
+
       const speechConfig = sdk.SpeechConfig.fromAuthorizationToken(token, region)
       speechConfig.speechSynthesisVoiceName = 'en-IN-NeerjaNeural'
-      
+
       const audioConfig = sdk.AudioConfig.fromDefaultSpeakerOutput()
       const synthesizer = new sdk.SpeechSynthesizer(speechConfig, audioConfig)
 
@@ -165,13 +206,13 @@ export default function VoiceRecorder({
         <AnimatePresence>
           {isRecording && (
             <>
-              <motion.div 
+              <motion.div
                 className="absolute inset-0 rounded-full bg-blue-400/20"
                 initial={{ scale: 1 }}
                 animate={{ scale: 1 + (volumeLevel / 50) }}
                 transition={{ duration: 0.1 }}
               />
-              <motion.div 
+              <motion.div
                 className="absolute inset-0 rounded-full bg-blue-400/10"
                 initial={{ scale: 1 }}
                 animate={{ scale: 1.5 + (volumeLevel / 30) }}
@@ -183,11 +224,10 @@ export default function VoiceRecorder({
 
         <Button
           size="lg"
-          className={`relative z-10 w-24 h-24 rounded-full transition-all duration-500 shadow-xl ${
-            isRecording 
-              ? 'bg-red-500 hover:bg-red-600' 
+          className={`relative z-10 w-24 h-24 rounded-full transition-all duration-500 shadow-xl ${isRecording
+              ? 'bg-red-500 hover:bg-red-600'
               : 'bg-[#0B3C5D] hover:bg-[#0F4C81]'
-          }`}
+            }`}
           onClick={isRecording ? stopRecording : startRecording}
         >
           {isRecording ? (
@@ -203,15 +243,15 @@ export default function VoiceRecorder({
           {isRecording ? 'Listening...' : 'Tap Mic to Speak'}
         </h3>
         <p className="text-gray-500 font-medium">
-          {isRecording 
-            ? 'Tell us about the civic issue in detail' 
+          {isRecording
+            ? 'Tell us about the civic issue in detail'
             : 'Record your complaint naturally'}
         </p>
       </div>
 
       {/* Real-time Transcript Bubble */}
       <AnimatePresence>
-        {(transcript || isRecording) && (
+        {(fullTranscript || isRecording) && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -220,18 +260,39 @@ export default function VoiceRecorder({
           >
             <MessageSquare className="absolute -top-3 -left-3 text-blue-400 w-8 h-8" />
             <p className="leading-relaxed">
-              {transcript || (isRecording ? "Speak now..." : "")}
+              {fullTranscript}
+              {isRecording && !interimTranscript && !finalTranscript && "Speak now..."}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Live Translation Bubble */}
+      <AnimatePresence>
+        {(finalTranslation || interimTranslation || isRecording) && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="w-full max-w-md p-4 bg-green-50/50 rounded-3xl border border-green-100 text-gray-700 min-h-[60px] relative"
+          >
+            <div className="text-sm text-green-600 font-medium -mb-1">
+              {displayLang ? `Live translation (${displayLang})` : 'Live translation'}
+            </div>
+            <p className="leading-relaxed mt-1">
+              {finalTranslation}{finalTranslation && interimTranslation ? ' ' : ''}{interimTranslation}
+              {isRecording && !interimTranslation && !finalTranslation && ' Translating...'}
             </p>
           </motion.div>
         )}
       </AnimatePresence>
 
       <div className="flex gap-4">
-        {transcript && !isRecording && (
+        {fullTranscript && !isRecording && (
           <>
             <Button
               variant="outline"
-              onClick={() => speakText(transcript)}
+              onClick={() => speakText(fullTranscript)}
               disabled={isSynthesizing}
               className="rounded-xl"
             >
@@ -243,7 +304,7 @@ export default function VoiceRecorder({
               Playback
             </Button>
             <Button
-              onClick={() => onTranscriptionComplete(transcript)}
+              onClick={() => onTranscriptionComplete(fullTranscript)}
               className="bg-[#0B3C5D] rounded-xl px-8"
             >
               Submit Transcript

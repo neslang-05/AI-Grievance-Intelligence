@@ -34,9 +34,9 @@ export function StatsRibbon({ stats }: StatsRibbonProps) {
       label: 'Total Reports',
       value: stats.total,
       icon: Users,
-      color: 'text-indigo-600',
-      bg: 'bg-indigo-50',
-      border: 'border-indigo-100'
+      color: 'text-emerald-700',
+      bg: 'bg-emerald-50',
+      border: 'border-emerald-100'
     },
     {
       label: 'Awaiting Action',
@@ -50,17 +50,17 @@ export function StatsRibbon({ stats }: StatsRibbonProps) {
       label: 'Under Analysis',
       value: stats.inProgress,
       icon: AlertTriangle,
-      color: 'text-blue-600',
-      bg: 'bg-blue-50',
-      border: 'border-blue-100'
+      color: 'text-teal-600',
+      bg: 'bg-teal-50',
+      border: 'border-teal-100'
     },
     {
       label: 'Resolution Rate',
       value: stats.total > 0 ? `${Math.round((stats.resolved / stats.total) * 100)}%` : '0%',
       icon: ShieldCheck,
-      color: 'text-emerald-600',
-      bg: 'bg-emerald-50',
-      border: 'border-emerald-100'
+      color: 'text-[#064E3B]',
+      bg: 'bg-emerald-100',
+      border: 'border-emerald-200'
     }
   ]
 
@@ -80,7 +80,7 @@ export function StatsRibbon({ stats }: StatsRibbonProps) {
                   <p className="text-sm font-medium text-slate-500 mb-1">{stat.label}</p>
                   <h3 className="text-3xl font-extrabold text-slate-800">{stat.value}</h3>
                 </div>
-                <div className={`p-3 rounded-xl ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform duration-300`}>
+                <div className={`p-3 rounded-none ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform duration-300`}>
                   <stat.icon size={24} />
                 </div>
               </div>

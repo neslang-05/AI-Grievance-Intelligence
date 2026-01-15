@@ -3,13 +3,13 @@
 import React from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { 
-  Camera, 
-  Upload, 
-  Mic, 
-  FileText, 
-  ShieldCheck, 
-  Zap, 
+import {
+  Camera,
+  Upload,
+  Mic,
+  FileText,
+  ShieldCheck,
+  Zap,
   BarChart3,
   ArrowRight,
   CheckCircle2,
@@ -20,7 +20,7 @@ import { Card } from '@/components/ui/card'
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen bg-[#F8FAFC]">
+    <div className="flex flex-col min-h-screen bg-gradient-to-b from-emerald-50/60 via-white to-white">
       {/* Hero Section */}
       <section className="relative pt-12 pb-16 md:pt-20 md:pb-24 overflow-hidden">
         {/* Background Gradients and Patterns */}
@@ -125,7 +125,7 @@ export default function Home() {
               </motion.div>
             </div>
 
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8 }}
@@ -187,7 +187,7 @@ export default function Home() {
               <div className="mt-12 flex justify-center">
                 <Link href="/dashboard">
                   <Button variant="ghost" className="text-xs font-black text-indigo-600 uppercase tracking-widest hover:bg-white hover:text-indigo-700 font-bold group">
-                    Explore Intelligence Portal 
+                    Explore Intelligence Portal
                     <ArrowRight size={14} className="ml-2 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>

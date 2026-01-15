@@ -28,6 +28,8 @@ export interface Database {
           ai_confidence: number
           status: 'pending' | 'in_progress' | 'resolved' | 'rejected'
           rejection_reason: string | null
+          rejected_by: string | null
+          rejected_at: string | null
           is_valid: boolean
           validation_message: string | null
         }
@@ -49,6 +51,8 @@ export interface Database {
           ai_confidence: number
           status?: 'pending' | 'in_progress' | 'resolved' | 'rejected'
           rejection_reason?: string | null
+          rejected_by?: string | null
+          rejected_at?: string | null
           is_valid?: boolean
           validation_message?: string | null
         }
@@ -70,6 +74,8 @@ export interface Database {
           ai_confidence?: number
           status?: 'pending' | 'in_progress' | 'resolved' | 'rejected'
           rejection_reason?: string | null
+          rejected_by?: string | null
+          rejected_at?: string | null
           is_valid?: boolean
           validation_message?: string | null
         }

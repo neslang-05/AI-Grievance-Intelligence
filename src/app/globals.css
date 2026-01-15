@@ -54,7 +54,13 @@
     @apply border-border;
     border-radius: 0px !important;
   }
+
   body {
-    @apply bg-background text-foreground;
+    /* Keep text color from variables but apply a subtle blue gradient background site-wide */
+    @apply text-foreground;
+    background-color: hsl(var(--background));
+    background-image: linear-gradient(to bottom, rgba(240, 249, 255, 0.6), rgba(255, 255, 255, 1) 40%, rgba(255, 255, 255, 1));
+    background-repeat: no-repeat;
+    background-attachment: fixed;
   }
 }

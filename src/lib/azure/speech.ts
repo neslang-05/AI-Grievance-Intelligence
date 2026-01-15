@@ -52,9 +52,9 @@ export async function transcribeAudio(audioBuffer: Buffer): Promise<string> {
           recognizer.stopContinuousRecognitionAsync()
         }, 30000) // 30 second timeout
       },
-      (err) => {
+      (err: unknown) => {
         recognizer.close()
-        reject(new Error(`Failed to start recognition: ${err}`))
+        reject(new Error(`Failed to start recognition: ${String(err)}`))
       }
     )
   })

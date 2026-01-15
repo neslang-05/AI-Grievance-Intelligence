@@ -61,7 +61,7 @@ export default function ComplaintForm({ preloadedImages = [] }: ComplaintFormPro
     keywords: string[];
     imageDescriptions?: string[];
   } | null>(null)
-  
+
   const [selectedDepartment, setSelectedDepartment] = useState('')
 
   // Preview Mode
@@ -97,7 +97,7 @@ export default function ComplaintForm({ preloadedImages = [] }: ComplaintFormPro
   // Search address and get coordinates
   const searchAddress = async () => {
     if (!address.trim()) return
-    
+
     setIsSearchingAddress(true)
     try {
       const response = await fetch(
@@ -165,9 +165,9 @@ export default function ComplaintForm({ preloadedImages = [] }: ComplaintFormPro
         formData.append(`images`, blob, `image-${i}.jpg`)
         formData.append(`image-${i}`, blob, `image-${i}.jpg`)
       })
-      
+
       // Clear description temporarily if currently empty to show loading placeholder
-      if (!text) setText('') 
+      if (!text) setText('')
 
       const res = await analyzeComplaintPreSubmit(formData)
       if (res.success && res.analysis) {
@@ -178,16 +178,16 @@ export default function ComplaintForm({ preloadedImages = [] }: ComplaintFormPro
           keywords: res.analysis.keywords || [],
           imageDescriptions: res.analysis.imageDescriptions
         })
-        
+
         // Only pre-fill if user hasn't typed anything yet
         if (!text || text.trim().length < 10) {
           setText(res.analysis.summary)
         }
-        
+
         if (!selectedDepartment) {
           setSelectedDepartment(res.analysis.department)
         }
-        
+
         toast.success("AI Analysis Complete: Suggestions updated")
       } else {
         toast.error(res.message || "AI Analysis failed. Please enter details manually.")
@@ -228,7 +228,7 @@ export default function ComplaintForm({ preloadedImages = [] }: ComplaintFormPro
           }
           setIsGettingLocation(false)
         },
-        (err) => {
+        (err: unknown) => {
           console.error('Geolocation error:', err)
           if (!silent) {
             toast.error('Could not get location. Please enter address manually.')
@@ -777,7 +777,7 @@ export default function ComplaintForm({ preloadedImages = [] }: ComplaintFormPro
                         <p className="text-xs text-gray-500 text-center">
                           Click on the map to adjust the location pin
                         </p>
-                        
+
                         {/* Location Accept/Reject */}
                         <div className="bg-gray-50 border rounded-lg p-4 space-y-3">
                           <div className="text-sm">
@@ -787,7 +787,7 @@ export default function ComplaintForm({ preloadedImages = [] }: ComplaintFormPro
                               Coordinates: {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
                             </p>
                           </div>
-                          
+
                           {!locationAccepted ? (
                             <div className="flex gap-2">
                               <Button

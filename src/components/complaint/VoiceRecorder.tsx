@@ -100,7 +100,7 @@ export default function VoiceRecorder({
           onRecordingStateChange?.(true)
           startVolumeAnalysis()
         },
-        (err) => {
+        (err: unknown) => {
           console.error(err)
           toast.error('Failed to start microphone')
         }
@@ -123,7 +123,7 @@ export default function VoiceRecorder({
           recognizerRef.current?.close()
           recognizerRef.current = null
         },
-        (err) => {
+        (err: unknown) => {
           console.error(err)
           setIsRecording(false)
         }
@@ -187,7 +187,7 @@ export default function VoiceRecorder({
           setIsSynthesizing(false)
           synthesizer.close()
         },
-        (err) => {
+        (err: unknown) => {
           console.error(err)
           setIsSynthesizing(false)
           synthesizer.close()
@@ -225,8 +225,8 @@ export default function VoiceRecorder({
         <Button
           size="lg"
           className={`relative z-10 w-24 h-24 rounded-full transition-all duration-500 shadow-xl ${isRecording
-              ? 'bg-red-500 hover:bg-red-600'
-              : 'bg-[#0B3C5D] hover:bg-[#0F4C81]'
+            ? 'bg-red-500 hover:bg-red-600'
+            : 'bg-[#0B3C5D] hover:bg-[#0F4C81]'
             }`}
           onClick={isRecording ? stopRecording : startRecording}
         >

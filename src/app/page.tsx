@@ -20,7 +20,7 @@ import { Card } from '@/components/ui/card'
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-b from-emerald-50/60 via-white to-white">
+    <div className="flex flex-col min-h-screen bg-gradient-to-b from-sky-50/60 via-white to-white">
       {/* Hero Section */}
       <section className="relative pt-12 pb-16 md:pt-20 md:pb-24 overflow-hidden">
         {/* Background Gradients and Patterns */}

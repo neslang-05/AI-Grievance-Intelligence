@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { MapPin, Edit3, User, Image as ImageIcon, Navigation, Search, Loader2, Download, Check } from 'lucide-react'
+import { MapPin, Edit3, User as UserIcon, Image as ImageIcon, Navigation, Search, Loader2, Download, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { submitComplaint, updateComplaintSummary, analyzeComplaintPreSubmit } from '@/app/actions/complaint.actions'
 import { createClient } from '@/lib/supabase/client'
+import type { User } from '@supabase/supabase-js'
 import { toast } from 'sonner'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import jsPDF from 'jspdf'
@@ -122,7 +123,7 @@ export default function ComplaintForm({ preloadedImages = [] }: ComplaintFormPro
   }
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(({ data: { user } }: { data: { user: User | null } }) => {
       setUser(user)
       if (user) setIsAnonymous(false)
     })
@@ -597,7 +598,7 @@ export default function ComplaintForm({ preloadedImages = [] }: ComplaintFormPro
                 {user && (
                   <div className="mb-6 p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-center justify-between">
                     <div className="flex items-center gap-2 text-[#0B3C5D]">
-                      <User className="h-4 w-4" />
+                      <UserIcon className="h-4 w-4" />
                       <span className="text-sm font-medium">Logged in as {user.email}</span>
                     </div>
                     <div className="flex items-center gap-2">

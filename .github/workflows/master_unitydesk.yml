@@ -9,9 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read # Required for actions/checkout
-
+    
     steps:
       - uses: actions/checkout@v4
 
@@ -41,6 +39,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: node-app
+      
+      # NOTE: There is NO azure/login step here.
       
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp

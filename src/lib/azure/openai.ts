@@ -1,4 +1,37 @@
 import { OpenAIClient, AzureKeyCredential } from '@azure/openai'
+import fs from 'fs'
+import path from 'path'
+
+// Ensure required env vars are present. If some are missing, try to load them
+// from a local `.env` file (only sets values that are currently undefined).
+function loadMissingEnvFromDotenv() {
+  const keys = ['AZURE_OPENAI_ENDPOINT', 'AZURE_OPENAI_API_KEY', 'AZURE_OPENAI_DEPLOYMENT_NAME']
+  const missing = keys.filter((k) => !process.env[k])
+  if (missing.length === 0) return
+
+  try {
+    const envPath = path.resolve(process.cwd(), '.env')
+    if (!fs.existsSync(envPath)) return
+    const content = fs.readFileSync(envPath, 'utf8')
+    content.split(/\r?\n/).forEach((line) => {
+      const trimmed = line.trim()
+      if (!trimmed || trimmed.startsWith('#')) return
+      const eq = trimmed.indexOf('=')
+      if (eq === -1) return
+      const key = trimmed.slice(0, eq).trim()
+      let val = trimmed.slice(eq + 1)
+      // strip optional quotes
+      if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+        val = val.slice(1, -1)
+      }
+      if (!process.env[key]) process.env[key] = val
+    })
+  } catch (err) {
+    // don't crash here; we'll surface missing variables below if still absent
+  }
+}
+
+loadMissingEnvFromDotenv()
 
 const endpoint = process.env.AZURE_OPENAI_ENDPOINT
 const apiKey = process.env.AZURE_OPENAI_API_KEY
@@ -38,7 +71,7 @@ export async function analyzeImage(imageBase64: string, prompt: string, useHighD
           ],
         },
       ],
-      { 
+      {
         maxTokens: 500,
         // Lower temperature for faster, more deterministic responses
         temperature: 0.1

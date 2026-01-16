@@ -53,6 +53,11 @@ jobs:
         with:
           name: node-app
 
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
@@ -60,7 +65,7 @@ jobs:
           app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
           slot-name: 'Production'
           package: release.zip
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          # publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }} # Optional if using azure/login
 
       - name: Post-deploy reminder
         run: |

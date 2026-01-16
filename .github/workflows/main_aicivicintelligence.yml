@@ -65,7 +65,7 @@ jobs:
           app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
           slot-name: 'Production'
           package: release.zip
-          # publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }} # Optional if using azure/login
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_3FEC210CBB714E83AC9295F918D80A6B }}
 
       - name: Post-deploy reminder
         run: |

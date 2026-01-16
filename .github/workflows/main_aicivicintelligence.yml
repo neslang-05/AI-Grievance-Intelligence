@@ -32,7 +32,7 @@ jobs:
         run: |
           npm ci --legacy-peer-deps
           npm run build --if-present
-          npm prune --production
+          npm install --omit=dev --legacy-peer-deps
 
       - name: Zip artifact for deployment
         run: |

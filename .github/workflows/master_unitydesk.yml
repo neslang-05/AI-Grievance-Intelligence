@@ -6,10 +6,21 @@ on:
       - master
   workflow_dispatch:
 
+# --- NEW: Environment Variables added here ---
+# These make the secrets available to the 'npm run build' and 'test' scripts
+env:
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+  AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+  AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+  AZURE_OPENAI_DEPLOYMENT_NAME: ${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+    permissions:
+      contents: read
+
     steps:
       - uses: actions/checkout@v4
 
@@ -40,7 +51,7 @@ jobs:
         with:
           name: node-app
       
-      # NOTE: There is NO azure/login step here.
+      # NO azure/login step needed here because we use publish-profile below
       
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp

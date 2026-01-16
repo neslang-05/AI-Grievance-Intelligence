@@ -33,10 +33,10 @@ async function uploadMedia(file: Buffer, fileName: string, bucket: string): Prom
 async function normalizeInputs(formData: FormData): Promise<NormalizedInput> {
   const text = formData.get('text') as string | null
   const voiceFile = formData.get('voice') as File | null
-  
+
   // Robustly get image files - check both 'images' and 'image-i' keys
   let imageFiles = formData.getAll('images') as File[]
-  
+
   // Also check for image-0, image-1, etc.
   for (let i = 0; i < 20; i++) {
     const file = formData.get(`image-${i}`) as File | null
@@ -125,7 +125,7 @@ export async function submitComplaint(formData: FormData) {
 
     // Step 4: Upload media files if present
     const voiceFile = formData.get('voice') as File | null
-    
+
     // Get image files - client sends them as image-0, image-1, etc.
     const imageFiles: File[] = []
     for (let i = 0; i < 20; i++) { // Allow up to 20 images
@@ -174,7 +174,7 @@ export async function submitComplaint(formData: FormData) {
         const loc = JSON.parse(locationJson)
         finalLocationLat = loc.lat
         finalLocationLng = loc.lng
-      } catch (e) { 
+      } catch (e) {
         console.error('Failed to parse location JSON:', e)
       }
     }
@@ -346,13 +346,41 @@ export async function analyzeComplaintPreSubmit(formData: FormData) {
 /**
  * Update complaint status (for officers)
  */
-export async function updateComplaintStatus(complaintId: string, newStatus: string) {
+export async function updateComplaintStatus(complaintId: string, newStatus: string, rejectionReason?: string | null) {
   try {
-    await requireOfficer();
+    const user = await requireOfficer();
     const supabase = await createClient();
+    // Fetch current status to enforce rules (closed can't be rejected)
+    const { data: existing, error: fetchErr } = await supabase
+      .from('complaints')
+      .select('status')
+      .eq('id', complaintId)
+      .single();
+
+    if (fetchErr) {
+      throw new Error(`Failed to fetch complaint: ${fetchErr.message}`);
+    }
+
+    if (existing?.status === 'resolved' && newStatus === 'rejected') {
+      return { success: false, message: 'Cannot reject a closed complaint' };
+    }
+
+    const updatePayload: any = { status: newStatus };
+    // Manage rejection fields
+    if (newStatus === 'rejected') {
+      updatePayload.rejection_reason = rejectionReason !== undefined ? rejectionReason : null;
+      updatePayload.rejected_by = user.id;
+      updatePayload.rejected_at = new Date().toISOString();
+    } else {
+      // clearing rejection metadata when moving out of rejected
+      updatePayload.rejection_reason = null;
+      updatePayload.rejected_by = null;
+      updatePayload.rejected_at = null;
+    }
+
     const { error } = await supabase
       .from('complaints')
-      .update({ status: newStatus } as any)
+      .update(updatePayload)
       .eq('id', complaintId);
     if (error) {
       throw new Error(`Failed to update status: ${error.message}`);

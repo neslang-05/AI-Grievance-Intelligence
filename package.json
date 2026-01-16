@@ -5,8 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "start": "node node_modules/next/dist/bin/next start"
   },
   "dependencies": {
     "@azure/openai": "^1.0.0-beta.12",

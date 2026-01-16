@@ -11,7 +11,7 @@ Prerequisites
 What we changed
 
 - Enabled `output: 'standalone'` in `next.config.js` so `next build` produces a self-contained server in `.next/standalone`.
-- Added GitHub Actions workflow: `.github/workflows/azure-deploy.yml` which builds, prepares, and deploys the standalone artifact.
+- Added GitHub Actions workflow: `.github/workflows/main_aicivicintelligence.yml` which builds, prepares, and deploys the standalone artifact.
 
 Required Azure App Settings (set in Azure Portal → Configuration)
 
@@ -22,7 +22,7 @@ Required Azure App Settings (set in Azure Portal → Configuration)
 How the workflow works
 
 1. Checks out the repo and sets Node 20.
-2. Runs `npm ci` and `npm run build` (Next.js produces `.next/standalone`).
+2. Runs `npm ci --legacy-peer-deps` and `npm run build` (Next.js produces `.next/standalone`).
 3. Installs production dependencies inside `.next/standalone`.
 4. Copies `public/` and `.next/static` into the standalone folder.
 5. Zips the standalone folder and deploys it using `azure/webapps-deploy@v3` with the publish profile.
